@@ -19,9 +19,11 @@ export default function Dashboard() {
         totalExpense: 0,
         balance: 0,
     });
+    const [categoryData, setCategoryData] = useState([]);
 
     useEffect(() => {
         fetchSummary();
+        fetchCategorySummary();
     }, []);
 
     const fetchSummary = async () => {
@@ -39,23 +41,46 @@ export default function Dashboard() {
         }
 
     };
+    const fetchCategorySummary = async () => {
+
+        try {
+
+            const response = await api.get("/dashboard/category-summary");
+
+            console.log(response.data);
+
+            setCategoryData(response.data);
+
+        } catch (error) {
+
+            console.log(error);
+
+        }
+
+    };
 
     const chartData = {
 
-        labels: ["Income", "Expenses"],
+        labels: categoryData.map(item => item.category),
 
         datasets: [
 
             {
-                data: [
-                    summary.totalIncome,
-                    summary.totalExpense,
-                ],
+
+                data: categoryData.map(item => item.amount),
 
                 backgroundColor: [
+
                     "#22c55e",
                     "#ef4444",
+                    "#3b82f6",
+                    "#facc15",
+                    "#a855f7",
+                    "#14b8a6",
+                    "#f97316"
+
                 ],
+
             },
 
         ],
