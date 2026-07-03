@@ -26,7 +26,12 @@ public class ExpenseController {
 
     @GetMapping
     public ResponseEntity<List<Expense>> getAll(Principal principal) {
-        return ResponseEntity.ok(expenseRepository.findByUser(getUser(principal)));
+
+        System.out.println("Principal = " + principal);
+
+        return ResponseEntity.ok(
+                expenseRepository.findByUser(getUser(principal))
+        );
     }
 
     @PostMapping

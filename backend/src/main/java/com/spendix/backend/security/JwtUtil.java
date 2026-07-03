@@ -37,6 +37,7 @@ public class JwtUtil {
             extractEmail(token);
             return true;
         } catch (Exception e) {
+            e.printStackTrace();   // <-- add this
             return false;
         }
     }
