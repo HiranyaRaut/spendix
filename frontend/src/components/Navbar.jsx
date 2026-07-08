@@ -1,9 +1,32 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import api from "../api/axios";
 
 export default function Navbar() {
 
     const navigate = useNavigate();
     const location = useLocation();
+    const [profile, setProfile] = useState({
+        name: "Hiranya",
+        email: "",
+        profilePicture: ""
+    });
+
+    useEffect(() => {
+        fetchProfile();
+    }, [location.pathname]);
+
+    const fetchProfile = async () => {
+        try {
+            const res = await api.get("/users/me");
+            setProfile(res.data);
+            if (res.data.name) {
+                localStorage.setItem("name", res.data.name);
+            }
+        } catch (err) {
+            console.error("Error fetching user profile:", err);
+        }
+    };
 
     const logout = () => {
         localStorage.removeItem("token");
@@ -42,6 +65,15 @@ export default function Navbar() {
             )
         },
         {
+            name: "Goals",
+            path: "/goals",
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zM12 17c2.761 0 5-2.239 5-5s-2.239-5-5-5-5 2.239-5 5 2.239 5 5 5zM12 14c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z" />
+                </svg>
+            )
+        },
+        {
             name: "Settings",
             path: "/settings",
             icon: (
@@ -55,25 +87,25 @@ export default function Navbar() {
 
     return (
 
-        <aside className="w-64 bg-[#0d0b09] border-r border-[#26221c] flex flex-col justify-between p-6 min-h-screen sticky top-0 shrink-0">
+        <aside className="w-64 bg-bg-sidebar border-r border-border-primary flex flex-col justify-between p-6 min-h-screen sticky top-0 shrink-0">
 
             <div>
 
                 {/* Brand / Logo */}
                 <div className="flex items-center gap-3 mb-10 mt-2">
 
-                    <div className="w-10 h-10 rounded-full bg-[#dfa935] flex items-center justify-center text-black font-serif italic text-xl font-bold shadow-md shadow-[#dfa935]/10">
-                        S
+                    <div className="w-10 h-10 rounded-full bg-accent-primary flex items-center justify-center text-black font-serif italic text-xl font-bold shadow-md shadow-accent-primary/10">
+                        J
                     </div>
 
                     <div>
 
-                        <span className="text-2xl font-serif italic font-bold text-[#eae5db] tracking-wide block leading-none">
-                            Spendix
+                        <span className="text-2xl font-serif italic font-bold text-text-primary tracking-wide block leading-none">
+                            JoySpend
                         </span>
 
-                        <span className="text-[10px] text-[#8f8a82] font-medium tracking-wider block mt-1 uppercase">
-                            A ledger for everyday money
+                        <span className="text-[10px] text-text-secondary font-medium tracking-wider block mt-1 uppercase">
+                            A ledger for mindful money
                         </span>
 
                     </div>
@@ -94,8 +126,8 @@ export default function Navbar() {
                                 to={item.path}
                                 className={`flex items-center px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
                                     active
-                                        ? "bg-[#dfa935] text-black shadow-md shadow-[#dfa935]/20 font-semibold"
-                                        : "text-[#8f8a82] hover:text-[#eae5db] hover:bg-[#1a1613]"
+                                        ? "bg-accent-primary text-black shadow-md shadow-accent-primary/20 font-semibold"
+                                        : "text-text-secondary hover:text-text-primary hover:bg-bg-secondary"
                                 }`}
                             >
                                 {item.icon}
@@ -110,12 +142,35 @@ export default function Navbar() {
 
             </div>
 
+            {/* User Profile Card */}
+            <div className="pt-6 pb-4 border-t border-border-primary flex items-center gap-3">
+                {profile.profilePicture ? (
+                    <img 
+                        src={profile.profilePicture} 
+                        alt="Profile" 
+                        className="w-10 h-10 rounded-full object-cover border border-accent-primary/40"
+                    />
+                ) : (
+                    <div className="w-10 h-10 rounded-full bg-accent-primary/15 border border-accent-primary/30 text-accent-primary flex items-center justify-center font-bold text-sm">
+                        {(profile.name || "J").charAt(0).toUpperCase()}
+                    </div>
+                )}
+                <div className="overflow-hidden">
+                    <p className="text-sm font-semibold text-text-primary truncate leading-tight">
+                        {profile.name}
+                    </p>
+                    <p className="text-xs text-text-secondary truncate mt-0.5 font-medium leading-none">
+                        {profile.email}
+                    </p>
+                </div>
+            </div>
+
             {/* Logout button at bottom */}
-            <div className="pt-6 border-t border-[#26221c]">
+            <div className="pt-4 border-t border-border-primary/40">
 
                 <button
                     onClick={logout}
-                    className="w-full flex items-center px-4 py-3 rounded-lg font-medium text-red-400 hover:text-red-300 hover:bg-[#1a0808]/40 transition-all duration-200"
+                    className="w-full flex items-center px-4 py-3 rounded-lg font-medium text-red-400 hover:text-red-300 hover:bg-[#1a0808]/40 transition-all duration-200 cursor-pointer"
                 >
 
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -133,3 +188,5 @@ export default function Navbar() {
     );
 
 }
+
+

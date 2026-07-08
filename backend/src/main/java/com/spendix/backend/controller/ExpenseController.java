@@ -2,9 +2,11 @@ package com.spendix.backend.controller;
 
 import com.spendix.backend.dto.TransactionDtos.ExpenseRequest;
 import com.spendix.backend.entity.Expense;
+import com.spendix.backend.entity.ImpulseAvoided;
 import com.spendix.backend.entity.User;
 import com.spendix.backend.repository.ExpenseRepository;
 import com.spendix.backend.repository.UserRepository;
+import com.spendix.backend.repository.ImpulseAvoidedRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,6 +20,7 @@ public class ExpenseController {
 
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
+    private final ImpulseAvoidedRepository impulseAvoidedRepository;
 
     private User getUser(Principal principal) {
         return userRepository.findByEmail(principal.getName())
@@ -39,8 +42,24 @@ public class ExpenseController {
         Expense expense = Expense.builder()
                 .title(req.title()).amount(req.amount())
                 .category(req.category()).paymentMethod(req.paymentMethod())
-                .date(req.date()).user(getUser(principal)).build();
+                .date(req.date())
+                .joyScore(req.joyScore())
+                .planned(req.planned())
+                .goalAligned(req.goalAligned())
+                .user(getUser(principal)).build();
         return ResponseEntity.ok(expenseRepository.save(expense));
+    }
+
+    @PostMapping("/avoided")
+    public ResponseEntity<ImpulseAvoided> addAvoided(@RequestBody ExpenseRequest req, Principal principal) {
+        ImpulseAvoided avoided = ImpulseAvoided.builder()
+                .title(req.title())
+                .amount(req.amount())
+                .category(req.category())
+                .date(req.date() != null ? req.date() : java.time.LocalDate.now())
+                .user(getUser(principal))
+                .build();
+        return ResponseEntity.ok(impulseAvoidedRepository.save(avoided));
     }
 
     @DeleteMapping("/{id}")

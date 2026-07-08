@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import api from "../api/axios";
 
 const CATEGORY_COLORS = {
-    rent: "bg-[#dfa935]",       // gold
+    rent: "bg-accent-primary",       // gold
     food: "bg-[#2d9d5c]",       // green
     transport: "bg-[#3b82f6]",  // blue
     utilities: "bg-[#6b7280]",  // grey
@@ -65,18 +65,18 @@ export default function Categories() {
 
     return (
 
-        <div className="p-8 bg-[#13110e] text-[#eae5db] min-h-screen">
+        <div className="p-8 bg-bg-primary text-text-primary min-h-screen">
 
-            <h1 className="text-4xl font-serif italic font-bold mb-8 text-[#eae5db]">
+            <h1 className="text-4xl font-serif italic font-bold mb-8 text-text-primary">
                 Categories
             </h1>
 
             <div className="grid grid-cols-2 gap-8">
 
                 {/* Expense Categories Panel */}
-                <div className="bg-[#1a1613] border border-[#26221c] rounded-xl p-6 shadow-lg">
+                <div className="bg-bg-secondary border border-border-primary rounded-xl p-6 shadow-lg">
 
-                    <h2 className="text-sm font-bold tracking-wider text-[#8f8a82] uppercase mb-6 flex justify-between items-center">
+                    <h2 className="text-sm font-bold tracking-wider text-text-secondary uppercase mb-6 flex justify-between items-center">
 
                         <span>Expense Categories</span>
 
@@ -108,7 +108,7 @@ export default function Categories() {
 
                                                 <span className={`w-3 h-3 rounded-full ${colorClass}`} />
 
-                                                <span className="text-[#eae5db] font-semibold">
+                                                <span className="text-text-primary font-semibold">
                                                     {item.category}
                                                 </span>
 
@@ -116,11 +116,11 @@ export default function Categories() {
 
                                             <div className="text-right">
 
-                                                <span className="text-[#eae5db] font-bold">
+                                                <span className="text-text-primary font-bold">
                                                     ₹ {item.amount.toLocaleString()}
                                                 </span>
 
-                                                <span className="text-[#8f8a82] ml-2 text-xs">
+                                                <span className="text-text-secondary ml-2 text-xs">
                                                     ({percentage}%)
                                                 </span>
 
@@ -129,7 +129,7 @@ export default function Categories() {
                                         </div>
 
                                         {/* Progress bar */}
-                                        <div className="w-full bg-[#13110e] h-2 rounded-full overflow-hidden border border-[#26221c]">
+                                        <div className="w-full bg-bg-primary h-2 rounded-full overflow-hidden border border-border-primary">
 
                                             <div
                                                 className={`h-full rounded-full transition-all duration-500 ${colorClass}`}
@@ -146,7 +146,7 @@ export default function Categories() {
 
                         ) : (
 
-                            <div className="text-center py-10 text-[#8f8a82] italic">
+                            <div className="text-center py-10 text-text-secondary italic">
                                 No expense data found.
                             </div>
 
@@ -157,9 +157,9 @@ export default function Categories() {
                 </div>
 
                 {/* Income Categories Panel */}
-                <div className="bg-[#1a1613] border border-[#26221c] rounded-xl p-6 shadow-lg">
+                <div className="bg-bg-secondary border border-border-primary rounded-xl p-6 shadow-lg">
 
-                    <h2 className="text-sm font-bold tracking-wider text-[#8f8a82] uppercase mb-6 flex justify-between items-center">
+                    <h2 className="text-sm font-bold tracking-wider text-text-secondary uppercase mb-6 flex justify-between items-center">
 
                         <span>Income Categories</span>
 
@@ -191,7 +191,7 @@ export default function Categories() {
 
                                                 <span className={`w-3 h-3 rounded-full ${colorClass}`} />
 
-                                                <span className="text-[#eae5db] font-semibold">
+                                                <span className="text-text-primary font-semibold">
                                                     {item.category}
                                                 </span>
 
@@ -199,11 +199,11 @@ export default function Categories() {
 
                                             <div className="text-right">
 
-                                                <span className="text-[#eae5db] font-bold">
+                                                <span className="text-text-primary font-bold">
                                                     ₹ {item.amount.toLocaleString()}
                                                 </span>
 
-                                                <span className="text-[#8f8a82] ml-2 text-xs">
+                                                <span className="text-text-secondary ml-2 text-xs">
                                                     ({percentage}%)
                                                 </span>
 
@@ -212,7 +212,7 @@ export default function Categories() {
                                         </div>
 
                                         {/* Progress bar */}
-                                        <div className="w-full bg-[#13110e] h-2 rounded-full overflow-hidden border border-[#26221c]">
+                                        <div className="w-full bg-bg-primary h-2 rounded-full overflow-hidden border border-border-primary">
 
                                             <div
                                                 className={`h-full rounded-full transition-all duration-500 ${colorClass}`}
@@ -229,7 +229,7 @@ export default function Categories() {
 
                         ) : (
 
-                            <div className="text-center py-10 text-[#8f8a82] italic">
+                            <div className="text-center py-10 text-text-secondary italic">
                                 No income data found.
                             </div>
 
@@ -246,3 +246,6 @@ export default function Categories() {
     );
 
 }
+
+
+

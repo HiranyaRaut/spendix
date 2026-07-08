@@ -1,1 +1,56 @@
 @import "tailwindcss";
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-secondary: var(--bg-secondary);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-border-primary: var(--border-color);
+  --color-accent-primary: var(--accent-color);
+  --color-accent-hover: var(--accent-hover);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+}
+
+:root {
+  --bg-primary: #13110e;
+  --bg-secondary: #1a1613;
+  --bg-sidebar: #0d0b09;
+  --border-color: #26221c;
+  --accent-color: #c5a059;
+  --accent-hover: #d2b373;
+  --text-primary: #eae5db;
+  --text-secondary: #8f8a82;
+}
+
+.theme-emerald {
+  --bg-primary: #0a1410;
+  --bg-secondary: #101c17;
+  --bg-sidebar: #060b08;
+  --border-color: #1b2e26;
+  --accent-color: #2d9d5c;
+  --accent-hover: #3eb570;
+  --text-primary: #e6f3ed;
+  --text-secondary: #87a89a;
+}
+
+.theme-royal-blue {
+  --bg-primary: #090f1a;
+  --bg-secondary: #111827;
+  --bg-sidebar: #05080f;
+  --border-color: #1e293b;
+  --accent-color: #3b82f6;
+  --accent-hover: #60a5fa;
+  --text-primary: #f0f4f9;
+  --text-secondary: #94a3b8;
+}
+
+.theme-rose-wood {
+  --bg-primary: #14090b;
+  --bg-secondary: #1c1012;
+  --bg-sidebar: #0b0506;
+  --border-color: #2e1b1d;
+  --accent-color: #e15a5a;
+  --accent-hover: #f07d7d;
+  --text-primary: #f9f0f1;
+  --text-secondary: #a88789;
+}

@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import MindfulPauseModal from "../components/MindfulPauseModal";
 
 export default function Transactions() {
 
     const [transactions, setTransactions] = useState([]);
     const [filter, setFilter] = useState("all"); // 'all', 'income', 'expense'
+    const [summaryStats, setSummaryStats] = useState({ goalProgress: 0 });
 
     const [form, setForm] = useState({
         type: "expense",
@@ -15,8 +17,13 @@ export default function Transactions() {
         paymentMethod: "Cash",
     });
 
+    // Mindful Pause Modal state
+    const [isPauseOpen, setIsPauseOpen] = useState(false);
+    const [pendingPayload, setPendingPayload] = useState(null);
+
     useEffect(() => {
         fetchTransactions();
+        fetchSummaryStats();
     }, []);
 
     const fetchTransactions = async () => {
@@ -39,6 +46,15 @@ export default function Transactions() {
         }
     };
 
+    const fetchSummaryStats = async () => {
+        try {
+            const res = await api.get("/dashboard/summary");
+            setSummaryStats(res.data);
+        } catch (err) {
+            console.error("Error fetching summary stats:", err);
+        }
+    };
+
     const handleChange = (e) => {
         setForm({
             ...form,
@@ -55,25 +71,53 @@ export default function Transactions() {
 
     const addTransaction = async (e) => {
         e.preventDefault();
-        try {
-            const endpoint = form.type === "income" ? "/income" : "/expenses";
-            const payload = form.type === "income"
-                ? {
+        
+        if (form.type === "expense") {
+            // Intercept with Mindful Pause modal
+            setPendingPayload({
+                title: form.title,
+                amount: parseFloat(form.amount),
+                category: form.category,
+                date: form.date,
+                paymentMethod: form.paymentMethod
+            });
+            setIsPauseOpen(true);
+        } else {
+            // Income, add immediately
+            try {
+                const payload = {
                     title: form.title,
                     amount: parseFloat(form.amount),
                     category: form.category,
                     date: form.date
-                }
-                : {
-                    title: form.title,
-                    amount: parseFloat(form.amount),
-                    category: form.category,
-                    date: form.date,
-                    paymentMethod: form.paymentMethod
                 };
+                await api.post("/income", payload);
+                setForm({
+                    type: "expense",
+                    title: "",
+                    amount: "",
+                    category: "",
+                    date: new Date().toISOString().split("T")[0],
+                    paymentMethod: "Cash",
+                });
+                fetchTransactions();
+            } catch (error) {
+                console.error("Error adding income transaction:", error);
+            }
+        }
+    };
 
-            await api.post(endpoint, payload);
-
+    const handleConfirmPause = async ({ joyScore, planned, goalAligned }) => {
+        try {
+            const finalPayload = {
+                ...pendingPayload,
+                joyScore,
+                planned,
+                goalAligned
+            };
+            await api.post("/expenses", finalPayload);
+            setIsPauseOpen(false);
+            setPendingPayload(null);
             setForm({
                 type: "expense",
                 title: "",
@@ -82,10 +126,10 @@ export default function Transactions() {
                 date: new Date().toISOString().split("T")[0],
                 paymentMethod: "Cash",
             });
-
             fetchTransactions();
+            fetchSummaryStats();
         } catch (error) {
-            console.error("Error adding transaction:", error);
+            console.error("Error adding expense transaction:", error);
         }
     };
 
@@ -94,6 +138,7 @@ export default function Transactions() {
             const endpoint = type === "income" ? `/income/${id}` : `/expenses/${id}`;
             await api.delete(endpoint);
             fetchTransactions();
+            fetchSummaryStats();
         } catch (error) {
             console.error("Error deleting transaction:", error);
         }
@@ -112,16 +157,16 @@ export default function Transactions() {
 
     return (
 
-        <div className="p-8 bg-[#13110e] text-[#eae5db] min-h-screen">
+        <div className="p-8 bg-bg-primary text-text-primary min-h-screen">
 
-            <h1 className="text-4xl font-serif italic font-bold mb-8 text-[#eae5db]">
+            <h1 className="text-4xl font-serif italic font-bold mb-8 text-text-primary">
                 Transactions
             </h1>
 
             {/* Quick Add Form */}
-            <div className="bg-[#1a1613] p-6 rounded-xl border border-[#26221c] shadow-lg mb-8">
+            <div className="bg-bg-secondary p-6 rounded-xl border border-border-primary shadow-lg mb-8">
 
-                <h2 className="text-sm font-bold tracking-wider text-[#8f8a82] uppercase mb-4">
+                <h2 className="text-sm font-bold tracking-wider text-text-secondary uppercase mb-4">
                     Add New Transaction
                 </h2>
 
@@ -130,11 +175,11 @@ export default function Transactions() {
                     {/* Type selection */}
                     <div className="flex flex-col">
 
-                        <span className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <span className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Type
                         </span>
 
-                        <div className="flex bg-[#13110e] p-1 rounded-lg border border-[#26221c] h-[46px] items-center">
+                        <div className="flex bg-bg-primary p-1 rounded-lg border border-border-primary h-[46px] items-center">
 
                             <button
                                 type="button"
@@ -142,7 +187,7 @@ export default function Transactions() {
                                 className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                                     form.type === "expense"
                                         ? "bg-[#e15a5a] text-white"
-                                        : "text-[#8f8a82] hover:text-[#eae5db]"
+                                        : "text-text-secondary hover:text-text-primary"
                                 }`}
                             >
                                 Expense
@@ -154,7 +199,7 @@ export default function Transactions() {
                                 className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                                     form.type === "income"
                                         ? "bg-[#2d9d5c] text-white"
-                                        : "text-[#8f8a82] hover:text-[#eae5db]"
+                                        : "text-text-secondary hover:text-text-primary"
                                 }`}
                             >
                                 Income
@@ -167,7 +212,7 @@ export default function Transactions() {
                     {/* Title */}
                     <div className="flex flex-col">
 
-                        <label className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Title
                         </label>
 
@@ -175,7 +220,7 @@ export default function Transactions() {
                             type="text"
                             name="title"
                             placeholder="Title"
-                            className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm h-[46px]"
+                            className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm h-[46px]"
                             value={form.title}
                             onChange={handleChange}
                             required
@@ -186,7 +231,7 @@ export default function Transactions() {
                     {/* Amount */}
                     <div className="flex flex-col">
 
-                        <label className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Amount
                         </label>
 
@@ -194,7 +239,7 @@ export default function Transactions() {
                             type="number"
                             name="amount"
                             placeholder="Amount"
-                            className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm h-[46px]"
+                            className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm h-[46px]"
                             value={form.amount}
                             onChange={handleChange}
                             required
@@ -205,7 +250,7 @@ export default function Transactions() {
                     {/* Category */}
                     <div className="flex flex-col">
 
-                        <label className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Category
                         </label>
 
@@ -213,7 +258,7 @@ export default function Transactions() {
                             type="text"
                             name="category"
                             placeholder="Category"
-                            className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm h-[46px]"
+                            className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm h-[46px]"
                             value={form.category}
                             onChange={handleChange}
                             required
@@ -224,14 +269,14 @@ export default function Transactions() {
                     {/* Date */}
                     <div className="flex flex-col">
 
-                        <label className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Date
                         </label>
 
                         <input
                             type="date"
                             name="date"
-                            className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm h-[46px]"
+                            className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm h-[46px]"
                             value={form.date}
                             onChange={handleChange}
                             required
@@ -242,7 +287,7 @@ export default function Transactions() {
                     {/* Payment Method / Placeholder */}
                     <div className="flex flex-col">
 
-                        <label className="text-xs font-bold text-[#8f8a82] uppercase mb-1.5">
+                        <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
                             Payment Method
                         </label>
 
@@ -250,20 +295,20 @@ export default function Transactions() {
 
                             <select
                                 name="paymentMethod"
-                                className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm h-[46px] cursor-pointer"
+                                className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm h-[46px] cursor-pointer"
                                 value={form.paymentMethod}
                                 onChange={handleChange}
                                 required
                             >
-                                <option value="Cash" className="bg-[#1a1613] text-[#eae5db]">Cash</option>
-                                <option value="Card" className="bg-[#1a1613] text-[#eae5db]">Card</option>
-                                <option value="UPI" className="bg-[#1a1613] text-[#eae5db]">UPI</option>
-                                <option value="Net Banking" className="bg-[#1a1613] text-[#eae5db]">Net Banking</option>
+                                <option value="Cash" className="bg-bg-secondary text-text-primary">Cash</option>
+                                <option value="Card" className="bg-bg-secondary text-text-primary">Card</option>
+                                <option value="UPI" className="bg-bg-secondary text-text-primary">UPI</option>
+                                <option value="Net Banking" className="bg-bg-secondary text-text-primary">Net Banking</option>
                             </select>
 
                         ) : (
 
-                            <div className="bg-[#13110e]/40 border border-[#26221c]/40 p-3 rounded text-[#8f8a82] text-sm h-[46px] flex items-center justify-center italic">
+                            <div className="bg-bg-primary/40 border border-border-primary/40 p-3 rounded text-text-secondary text-sm h-[46px] flex items-center justify-center italic">
                                 N/A (Income)
                             </div>
 
@@ -272,7 +317,7 @@ export default function Transactions() {
                     </div>
 
                     <button
-                        className="bg-[#dfa935] hover:bg-[#e5b84c] text-black font-semibold rounded p-3 col-span-6 shadow-lg shadow-[#dfa935]/15 transition-all cursor-pointer h-[46px] mt-2"
+                        className="bg-accent-primary hover:bg-accent-hover text-black font-semibold rounded p-3 col-span-6 shadow-lg shadow-accent-primary/15 transition-all cursor-pointer h-[46px] mt-2"
                     >
                         Add Transaction
                     </button>
@@ -282,14 +327,14 @@ export default function Transactions() {
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex bg-[#1a1613] p-1 rounded-xl border border-[#26221c] max-w-xs mb-6">
+            <div className="flex bg-bg-secondary p-1 rounded-xl border border-border-primary max-w-xs mb-6">
 
                 <button
                     onClick={() => setFilter("all")}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         filter === "all"
-                            ? "bg-[#dfa935] text-black font-semibold"
-                            : "text-[#8f8a82] hover:text-[#eae5db]"
+                            ? "bg-accent-primary text-black font-semibold"
+                            : "text-text-secondary hover:text-text-primary"
                     }`}
                 >
                     All
@@ -299,8 +344,8 @@ export default function Transactions() {
                     onClick={() => setFilter("income")}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         filter === "income"
-                            ? "bg-[#dfa935] text-black font-semibold"
-                            : "text-[#8f8a82] hover:text-[#eae5db]"
+                            ? "bg-accent-primary text-black font-semibold"
+                            : "text-text-secondary hover:text-text-primary"
                     }`}
                 >
                     Income
@@ -310,8 +355,8 @@ export default function Transactions() {
                     onClick={() => setFilter("expense")}
                     className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
                         filter === "expense"
-                            ? "bg-[#dfa935] text-black font-semibold"
-                            : "text-[#8f8a82] hover:text-[#eae5db]"
+                            ? "bg-accent-primary text-black font-semibold"
+                            : "text-text-secondary hover:text-text-primary"
                     }`}
                 >
                     Expenses
@@ -320,11 +365,11 @@ export default function Transactions() {
             </div>
 
             {/* Combined Transactions Table */}
-            <div className="bg-[#1a1613] border border-[#26221c] rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-bg-secondary border border-border-primary rounded-xl shadow-lg overflow-hidden">
 
                 <table className="w-full">
 
-                    <thead className="bg-[#0d0b09] text-[#8f8a82] text-xs font-bold tracking-wider uppercase border-b border-[#26221c]">
+                    <thead className="bg-bg-sidebar text-text-secondary text-xs font-bold tracking-wider uppercase border-b border-border-primary">
 
                     <tr>
 
@@ -333,6 +378,7 @@ export default function Transactions() {
                         <th className="p-4 text-left">Amount</th>
                         <th className="p-4 text-left">Category</th>
                         <th className="p-4 text-left">Payment Method</th>
+                        <th className="p-4 text-left">Joy Score</th>
                         <th className="p-4 text-left">Date</th>
                         <th className="p-4 text-center">Action</th>
 
@@ -348,10 +394,10 @@ export default function Transactions() {
 
                             <tr
                                 key={`${item.type}-${item.id}`}
-                                className="hover:bg-[#1a1613]/50"
+                                className="hover:bg-bg-secondary/50"
                             >
 
-                                <td className="p-4 font-medium text-[#eae5db]">
+                                <td className="p-4 font-medium text-text-primary">
                                     {item.title}
                                 </td>
 
@@ -373,15 +419,25 @@ export default function Transactions() {
                                     {item.type === "income" ? "↗" : "↘"} ₹ {item.amount.toLocaleString()}
                                 </td>
 
-                                <td className="p-4 text-[#8f8a82]">
+                                <td className="p-4 text-text-secondary">
                                     {item.category}
                                 </td>
 
-                                <td className="p-4 text-[#8f8a82]">
+                                <td className="p-4 text-text-secondary">
                                     {item.paymentMethod || <span className="italic opacity-60">N/A</span>}
                                 </td>
 
-                                <td className="p-4 text-[#8f8a82]">
+                                <td className="p-4">
+                                    {item.joyScore !== undefined && item.joyScore !== null ? (
+                                        <span className="text-accent-primary font-bold font-mono">
+                                            {item.joyScore} <span className="text-[10px] text-text-secondary">/100</span>
+                                        </span>
+                                    ) : (
+                                        <span className="italic text-text-secondary/60">N/A</span>
+                                    )}
+                                </td>
+
+                                <td className="p-4 text-text-secondary">
                                     {formatDate(item.date)}
                                 </td>
 
@@ -404,7 +460,7 @@ export default function Transactions() {
 
                         <tr>
 
-                            <td colSpan="7" className="p-10 text-center text-[#8f8a82] italic">
+                            <td colSpan="8" className="p-10 text-center text-text-secondary italic">
                                 No transactions found.
                             </td>
 
@@ -418,8 +474,23 @@ export default function Transactions() {
 
             </div>
 
+            {/* Mindful Pause Modal Overlay */}
+            <MindfulPauseModal
+                isOpen={isPauseOpen}
+                onClose={() => {
+                    setIsPauseOpen(false);
+                    setPendingPayload(null);
+                }}
+                onConfirm={handleConfirmPause}
+                expenseData={pendingPayload || {}}
+                summaryStats={summaryStats}
+            />
+
         </div>
 
     );
 
 }
+
+
+

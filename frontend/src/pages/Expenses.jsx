@@ -86,22 +86,22 @@ export default function Expenses() {
 
     return (
 
-        <div className="p-8 bg-[#13110e] text-[#eae5db] min-h-screen">
+        <div className="p-8 bg-bg-primary text-text-primary min-h-screen">
 
-            <h1 className="text-4xl font-serif italic font-bold mb-8 text-[#eae5db]">
+            <h1 className="text-4xl font-serif italic font-bold mb-8 text-text-primary">
                 Expenses
             </h1>
 
             <form
                 onSubmit={addExpense}
-                className="bg-[#1a1613] p-6 rounded-xl border border-[#26221c] shadow-lg mb-8 grid grid-cols-5 gap-4"
+                className="bg-bg-secondary p-6 rounded-xl border border-border-primary shadow-lg mb-8 grid grid-cols-5 gap-4"
             >
 
                 <input
                     type="text"
                     name="title"
                     placeholder="Title"
-                    className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm"
+                    className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                     value={form.title}
                     onChange={handleChange}
                     required
@@ -111,7 +111,7 @@ export default function Expenses() {
                     type="number"
                     name="amount"
                     placeholder="Amount"
-                    className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm"
+                    className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                     value={form.amount}
                     onChange={handleChange}
                     required
@@ -121,7 +121,7 @@ export default function Expenses() {
                     type="text"
                     name="category"
                     placeholder="Category"
-                    className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm"
+                    className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                     value={form.category}
                     onChange={handleChange}
                     required
@@ -129,39 +129,39 @@ export default function Expenses() {
 
                 <select
                     name="paymentMethod"
-                    className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm cursor-pointer"
+                    className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm cursor-pointer"
                     value={form.paymentMethod}
                     onChange={handleChange}
                     required
                 >
-                    <option value="Cash" className="bg-[#1a1613] text-[#eae5db]">Cash</option>
-                    <option value="Card" className="bg-[#1a1613] text-[#eae5db]">Card</option>
-                    <option value="UPI" className="bg-[#1a1613] text-[#eae5db]">UPI</option>
-                    <option value="Net Banking" className="bg-[#1a1613] text-[#eae5db]">Net Banking</option>
+                    <option value="Cash" className="bg-bg-secondary text-text-primary">Cash</option>
+                    <option value="Card" className="bg-bg-secondary text-text-primary">Card</option>
+                    <option value="UPI" className="bg-bg-secondary text-text-primary">UPI</option>
+                    <option value="Net Banking" className="bg-bg-secondary text-text-primary">Net Banking</option>
                 </select>
 
                 <input
                     type="date"
                     name="date"
-                    className="bg-[#13110e] border border-[#26221c] p-3 rounded text-[#eae5db] focus:outline-none focus:border-[#dfa935] text-sm"
+                    className="bg-bg-primary border border-border-primary p-3 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                     value={form.date}
                     onChange={handleChange}
                     required
                 />
 
                 <button
-                    className="bg-[#dfa935] hover:bg-[#e5b84c] text-black font-semibold rounded p-3 col-span-5 shadow-lg shadow-[#dfa935]/15 transition-all cursor-pointer"
+                    className="bg-accent-primary hover:bg-accent-hover text-black font-semibold rounded p-3 col-span-5 shadow-lg shadow-accent-primary/15 transition-all cursor-pointer"
                 >
                     Add Expense
                 </button>
 
             </form>
 
-            <div className="bg-[#1a1613] border border-[#26221c] rounded-xl shadow-lg overflow-hidden">
+            <div className="bg-bg-secondary border border-border-primary rounded-xl shadow-lg overflow-hidden">
 
                 <table className="w-full">
 
-                    <thead className="bg-[#0d0b09] text-[#8f8a82] text-xs font-bold tracking-wider uppercase border-b border-[#26221c]">
+                    <thead className="bg-bg-sidebar text-text-secondary text-xs font-bold tracking-wider uppercase border-b border-border-primary">
 
                     <tr>
 
@@ -182,10 +182,10 @@ export default function Expenses() {
 
                         <tr
                             key={item.id}
-                            className="hover:bg-[#1a1613]/50"
+                            className="hover:bg-bg-secondary/50"
                         >
 
-                            <td className="p-4 font-medium text-[#eae5db]">
+                            <td className="p-4 font-medium text-text-primary">
                                 {item.title}
                             </td>
 
@@ -193,15 +193,15 @@ export default function Expenses() {
                                 ₹ {item.amount.toLocaleString()}
                             </td>
 
-                            <td className="p-4 text-[#8f8a82]">
+                            <td className="p-4 text-text-secondary">
                                 {item.category}
                             </td>
 
-                            <td className="p-4 text-[#8f8a82]">
+                            <td className="p-4 text-text-secondary">
                                 {item.paymentMethod || "N/A"}
                             </td>
 
-                            <td className="p-4 text-[#8f8a82]">
+                            <td className="p-4 text-text-secondary">
                                 {item.date}
                             </td>
 
@@ -231,3 +231,5 @@ export default function Expenses() {
     );
 
 }
+
+

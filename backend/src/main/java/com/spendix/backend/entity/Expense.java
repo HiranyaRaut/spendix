@@ -18,6 +18,10 @@ public class Expense {
     private String paymentMethod;
     private LocalDate date;
 
+    private Integer joyScore;
+    private Boolean planned;
+    private Boolean goalAligned;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
