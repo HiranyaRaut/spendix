@@ -14,13 +14,20 @@ public class Expense {
 
     private String title;
     private Double amount;
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
     private String paymentMethod;
     private LocalDate date;
 
     private Integer joyScore;
     private Boolean planned;
     private Boolean goalAligned;
+
+    private String merchant;
+    private String joyReason;
+    private String receiptImageUrl;
+    private String location;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

@@ -9,6 +9,8 @@ export default function Settings() {
         profilePicture: "",
         currency: "₹",
         theme: "Dark Gold",
+        personality: "BALANCED",
+        motivation: "SECURITY",
     });
 
     const [passwordForm, setPasswordForm] = useState({
@@ -42,6 +44,8 @@ export default function Settings() {
                 name: res.data.name || "",
                 email: res.data.email || "",
                 profilePicture: res.data.profilePicture || "",
+                personality: res.data.personality || "BALANCED",
+                motivation: res.data.motivation || "SECURITY",
             }));
         } catch (err) {
             console.error("Error fetching profile details:", err);
@@ -90,7 +94,9 @@ export default function Settings() {
             const payload = {
                 name: form.name,
                 email: form.email,
-                profilePicture: form.profilePicture
+                profilePicture: form.profilePicture,
+                personality: form.personality,
+                motivation: form.motivation
             };
             
             const res = await api.put("/users/me", payload);
@@ -100,6 +106,8 @@ export default function Settings() {
             localStorage.setItem("email", res.data.email);
             localStorage.setItem("currency", form.currency);
             localStorage.setItem("theme", form.theme);
+            localStorage.setItem("personality", res.data.personality || "BALANCED");
+            localStorage.setItem("motivation", res.data.motivation || "SECURITY");
             
             // Apply theme class to document.documentElement (html element)
             const root = document.documentElement;
@@ -242,6 +250,44 @@ export default function Settings() {
                                 className="bg-bg-primary border border-border-primary rounded-lg p-3 text-sm text-text-primary focus:outline-none focus:border-accent-primary"
                                 placeholder="Email Address"
                             />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+
+                            {/* User Personality */}
+                            <div className="flex flex-col">
+                                <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
+                                    User Personality
+                                </label>
+                                <select
+                                    name="personality"
+                                    value={form.personality}
+                                    onChange={handleChange}
+                                    className="bg-bg-primary border border-border-primary rounded-lg p-3 text-sm text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                                >
+                                    <option value="BALANCED" className="bg-bg-secondary text-text-primary">Balanced (Default)</option>
+                                    <option value="SAVER" className="bg-bg-secondary text-text-primary">Saver</option>
+                                    <option value="SPENDER" className="bg-bg-secondary text-text-primary">Spender</option>
+                                </select>
+                            </div>
+
+                            {/* User Motivation */}
+                            <div className="flex flex-col">
+                                <label className="text-xs font-bold text-text-secondary uppercase mb-1.5">
+                                    Primary Motivation
+                                </label>
+                                <select
+                                    name="motivation"
+                                    value={form.motivation}
+                                    onChange={handleChange}
+                                    className="bg-bg-primary border border-border-primary rounded-lg p-3 text-sm text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                                >
+                                    <option value="SECURITY" className="bg-bg-secondary text-text-primary">Security (Default)</option>
+                                    <option value="EXPERIENCES" className="bg-bg-secondary text-text-primary">Experiences</option>
+                                    <option value="FREEDOM" className="bg-bg-secondary text-text-primary">Freedom</option>
+                                </select>
+                            </div>
+
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

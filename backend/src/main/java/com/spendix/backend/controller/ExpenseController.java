@@ -1,9 +1,11 @@
 package com.spendix.backend.controller;
 
 import com.spendix.backend.dto.TransactionDtos.ExpenseRequest;
+import com.spendix.backend.entity.Category;
 import com.spendix.backend.entity.Expense;
 import com.spendix.backend.entity.ImpulseAvoided;
 import com.spendix.backend.entity.User;
+import com.spendix.backend.repository.CategoryRepository;
 import com.spendix.backend.repository.ExpenseRepository;
 import com.spendix.backend.repository.UserRepository;
 import com.spendix.backend.repository.ImpulseAvoidedRepository;
@@ -21,6 +23,7 @@ public class ExpenseController {
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
     private final ImpulseAvoidedRepository impulseAvoidedRepository;
+    private final CategoryRepository categoryRepository;
 
     private User getUser(Principal principal) {
         return userRepository.findByEmail(principal.getName())
@@ -39,23 +42,44 @@ public class ExpenseController {
 
     @PostMapping
     public ResponseEntity<Expense> add(@RequestBody ExpenseRequest req, Principal principal) {
+        Category category = null;
+        if (req.categoryId() != null) {
+            category = categoryRepository.findById(req.categoryId()).orElse(null);
+        }
+        if (category == null) {
+            category = categoryRepository.findByNameAndUserOrSystem("General", getUser(principal))
+                    .stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("Default General category not found"));
+        }
+
         Expense expense = Expense.builder()
                 .title(req.title()).amount(req.amount())
-                .category(req.category()).paymentMethod(req.paymentMethod())
+                .category(category).paymentMethod(req.paymentMethod())
                 .date(req.date())
                 .joyScore(req.joyScore())
                 .planned(req.planned())
                 .goalAligned(req.goalAligned())
+                .merchant(req.merchant())
+                .joyReason(req.joyReason())
+                .receiptImageUrl(req.receiptImageUrl())
+                .location(req.location())
                 .user(getUser(principal)).build();
         return ResponseEntity.ok(expenseRepository.save(expense));
     }
 
     @PostMapping("/avoided")
     public ResponseEntity<ImpulseAvoided> addAvoided(@RequestBody ExpenseRequest req, Principal principal) {
+        String categoryName = "General";
+        if (req.categoryId() != null) {
+            categoryName = categoryRepository.findById(req.categoryId())
+                    .map(Category::getName)
+                    .orElse("General");
+        }
+
         ImpulseAvoided avoided = ImpulseAvoided.builder()
                 .title(req.title())
                 .amount(req.amount())
-                .category(req.category())
+                .category(categoryName)
                 .date(req.date() != null ? req.date() : java.time.LocalDate.now())
                 .user(getUser(principal))
                 .build();

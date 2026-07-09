@@ -29,7 +29,12 @@ public class UserController {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getProfilePicture()
+                user.getProfilePicture(),
+                user.getPersonality(),
+                user.getMotivation(),
+                user.getEnabled(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         ));
     }
 
@@ -52,6 +57,14 @@ public class UserController {
         if (req.profilePicture() != null) {
             user.setProfilePicture(req.profilePicture());
         }
+
+        if (req.personality() != null) {
+            user.setPersonality(req.personality());
+        }
+
+        if (req.motivation() != null) {
+            user.setMotivation(req.motivation());
+        }
         
         userRepository.save(user);
         
@@ -59,7 +72,12 @@ public class UserController {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getProfilePicture()
+                user.getProfilePicture(),
+                user.getPersonality(),
+                user.getMotivation(),
+                user.getEnabled(),
+                user.getCreatedAt(),
+                user.getUpdatedAt()
         ));
     }
 

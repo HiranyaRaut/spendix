@@ -14,7 +14,9 @@ public class Income {
 
     private String title;
     private Double amount;
-    private String category;
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
     private LocalDate date;
 
     @ManyToOne

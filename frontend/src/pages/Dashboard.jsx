@@ -11,20 +11,6 @@ import MindfulPauseModal from "../components/MindfulPauseModal";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-const CATEGORY_COLORS = {
-    rent: "#c5a059",
-    food: "#2d9d5c",
-    transport: "#3b82f6",
-    utilities: "#6b7280",
-    entertainment: "#a855f7",
-};
-const FALLBACK_COLORS = ["#f97316", "#14b8a6", "#ec4899", "#f43f5e", "#06b6d4"];
-
-const getCategoryColor = (categoryName, index) => {
-    const key = categoryName.toLowerCase();
-    return CATEGORY_COLORS[key] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
-};
-
 export default function Dashboard() {
 
     const [summary, setSummary] = useState({
@@ -39,19 +25,25 @@ export default function Dashboard() {
         avoidedMoney: 0,
     });
     const [categoryData, setCategoryData] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [goals, setGoals] = useState([]);
     const [userName, setUserName] = useState("Hiranya");
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [showAdvanced, setShowAdvanced] = useState(false);
     const [modalForm, setModalForm] = useState({
         type: "expense",
         title: "",
         amount: "",
-        category: "",
+        categoryId: "",
         date: new Date().toISOString().split("T")[0],
         paymentMethod: "Cash",
+        merchant: "",
+        joyReason: "",
+        receiptImageUrl: "",
+        location: "",
     });
 
     // Mindful Pause state
@@ -77,6 +69,18 @@ export default function Dashboard() {
             // Fetch goals
             const goalsRes = await api.get("/goals");
             setGoals(goalsRes.data);
+
+            // Fetch categories
+            const catsRes = await api.get("/categories");
+            setCategories(catsRes.data);
+            
+            const expCats = catsRes.data.filter(c => c.type === "EXPENSE" || c.type === "BOTH");
+            if (expCats.length > 0) {
+                setModalForm(f => ({
+                    ...f,
+                    categoryId: expCats[0].id
+                }));
+            }
 
             // Fetch recent transactions
             const [incomeRes, expenseRes] = await Promise.all([
@@ -113,28 +117,23 @@ export default function Dashboard() {
 
     const getCategoryAvatar = (item) => {
         if (item.type === "income") {
+            const icon = item.category?.icon || "💼";
+            const color = item.category?.color || "#2d9d5c";
             return {
-                letter: "I",
-                bg: "bg-[#2d9d5c]/20 text-[#2d9d5c] border border-[#2d9d5c]/30"
+                letter: icon,
+                bg: "border border-opacity-30",
+                style: { backgroundColor: `${color}20`, borderColor: `${color}30`, color: color }
             };
         }
-        const cat = item.category || "";
-        const firstLetter = cat.charAt(0).toUpperCase() || "E";
-        let bg = "bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/30"; // default
+        
+        const catIcon = item.category?.icon || "💰";
+        const catColor = item.category?.color || "#c5a059";
 
-        if (cat.toLowerCase() === "rent") {
-            bg = "bg-accent-primary/20 text-accent-primary border border-accent-primary/30";
-        } else if (cat.toLowerCase() === "food") {
-            bg = "bg-[#2d9d5c]/20 text-[#2d9d5c] border border-[#2d9d5c]/30";
-        } else if (cat.toLowerCase() === "transport") {
-            bg = "bg-[#3b82f6]/20 text-[#3b82f6] border border-[#3b82f6]/30";
-        } else if (cat.toLowerCase() === "utilities") {
-            bg = "bg-[#6b7280]/20 text-[#6b7280] border border-[#6b7280]/30";
-        } else if (cat.toLowerCase() === "entertainment") {
-            bg = "bg-[#a855f7]/20 text-[#a855f7] border border-[#a855f7]/30";
-        }
-
-        return { letter: firstLetter, bg };
+        return {
+            letter: catIcon,
+            bg: "border border-opacity-30",
+            style: { backgroundColor: `${catColor}20`, borderColor: `${catColor}30`, color: catColor }
+        };
     };
 
     // Chart configs
@@ -143,7 +142,7 @@ export default function Dashboard() {
         datasets: [
             {
                 data: categoryData.map(item => item.amount),
-                backgroundColor: categoryData.map((item, idx) => getCategoryColor(item.category, idx)),
+                backgroundColor: categoryData.map(item => item.color || "#c5a059"),
                 borderWidth: 0,
                 hoverOffset: 4,
             },
@@ -170,10 +169,20 @@ export default function Dashboard() {
 
     // Quick Add submission
     const handleModalChange = (e) => {
-        setModalForm({
-            ...modalForm,
-            [e.target.name]: e.target.value
-        });
+        const { name, value } = e.target;
+        if (name === "type") {
+            const filtered = categories.filter(c => value === "expense" ? (c.type === "EXPENSE" || c.type === "BOTH") : (c.type === "INCOME" || c.type === "BOTH"));
+            setModalForm(prev => ({
+                ...prev,
+                type: value,
+                categoryId: filtered.length > 0 ? filtered[0].id : ""
+            }));
+        } else {
+            setModalForm(prev => ({
+                ...prev,
+                [name]: value
+            }));
+        }
     };
 
     const handleQuickAddSubmit = async (e) => {
@@ -184,9 +193,13 @@ export default function Dashboard() {
             setPendingPayload({
                 title: modalForm.title,
                 amount: parseFloat(modalForm.amount),
-                category: modalForm.category,
+                categoryId: parseInt(modalForm.categoryId),
                 date: modalForm.date,
-                paymentMethod: modalForm.paymentMethod
+                paymentMethod: modalForm.paymentMethod,
+                merchant: modalForm.merchant,
+                joyReason: modalForm.joyReason,
+                receiptImageUrl: modalForm.receiptImageUrl,
+                location: modalForm.location
             });
             setIsModalOpen(false);
             setIsPauseOpen(true);
@@ -196,19 +209,12 @@ export default function Dashboard() {
                 const payload = {
                     title: modalForm.title,
                     amount: parseFloat(modalForm.amount),
-                    category: modalForm.category,
+                    categoryId: parseInt(modalForm.categoryId),
                     date: modalForm.date
                 };
                 await api.post("/income", payload);
                 setIsModalOpen(false);
-                setModalForm({
-                    type: "expense",
-                    title: "",
-                    amount: "",
-                    category: "",
-                    date: new Date().toISOString().split("T")[0],
-                    paymentMethod: "Cash",
-                });
+                resetModalForm();
                 fetchDashboardData();
             } catch (err) {
                 console.error("Error creating quick income:", err);
@@ -227,18 +233,28 @@ export default function Dashboard() {
             await api.post("/expenses", finalPayload);
             setIsPauseOpen(false);
             setPendingPayload(null);
-            setModalForm({
-                type: "expense",
-                title: "",
-                amount: "",
-                category: "",
-                date: new Date().toISOString().split("T")[0],
-                paymentMethod: "Cash",
-            });
+            resetModalForm();
             fetchDashboardData();
         } catch (err) {
             console.error("Error creating quick expense:", err);
         }
+    };
+
+    const resetModalForm = () => {
+        const expCats = categories.filter(c => c.type === "EXPENSE" || c.type === "BOTH");
+        setModalForm({
+            type: "expense",
+            title: "",
+            amount: "",
+            categoryId: expCats.length > 0 ? expCats[0].id : "",
+            date: new Date().toISOString().split("T")[0],
+            paymentMethod: "Cash",
+            merchant: "",
+            joyReason: "",
+            receiptImageUrl: "",
+            location: "",
+        });
+        setShowAdvanced(false);
     };
 
     // Dynamic AI Insights generator
@@ -294,7 +310,10 @@ export default function Dashboard() {
                 </div>
 
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        resetModalForm();
+                        setIsModalOpen(true);
+                    }}
                     className="bg-accent-primary hover:bg-accent-hover text-black font-semibold px-5 py-3 rounded-lg flex items-center gap-2 shadow-lg shadow-accent-primary/15 transition-all duration-200 cursor-pointer"
                 >
 
@@ -403,7 +422,7 @@ export default function Dashboard() {
 
             {/* Behavioral stats row */}
             <div className="grid grid-cols-3 gap-6 mb-10">
-                
+
                 {/* Purchases Supporting Goals % */}
                 <div className="bg-bg-secondary border border-border-primary rounded-xl p-5 shadow flex items-center gap-4">
                     <div className="w-11 h-11 rounded-xl bg-[#a855f7]/10 flex items-center justify-center text-[#a855f7] border border-[#a855f7]/20 text-lg shrink-0">
@@ -473,10 +492,12 @@ export default function Dashboard() {
 
                         {/* Custom Legend */}
                         <div className="flex flex-col gap-1.5 mt-2">
-                            {categoryData.map((item, idx) => (
+                            {categoryData.map((item) => (
                                 <div key={item.category} className="flex items-center justify-between py-1 text-xs">
                                     <div className="flex items-center gap-2">
-                                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: getCategoryColor(item.category, idx) }} />
+                                        <span className="w-5.5 h-5.5 rounded flex items-center justify-center text-xs shrink-0" style={{ backgroundColor: `${item.color}20`, border: `1px solid ${item.color}30`, color: item.color }}>
+                                            {item.icon || "💰"}
+                                        </span>
                                         <span className="text-text-primary font-medium">{item.category}</span>
                                     </div>
                                     <div className="flex-1 mx-3 border-b border-dotted border-border-primary" />
@@ -493,7 +514,7 @@ export default function Dashboard() {
                         <h2 className="text-xs font-bold tracking-wider text-text-secondary uppercase mb-4 flex items-center gap-2">
                             <span className="text-accent-primary">✦</span> Joy Insights
                         </h2>
-                        
+
                         <div className="bg-bg-primary/60 border border-border-primary/60 p-6 rounded-xl flex items-start gap-4 mb-6">
                             <div className="text-2xl text-accent-primary shrink-0 mt-0.5">💡</div>
                             <div>
@@ -536,28 +557,40 @@ export default function Dashboard() {
                             recentTransactions.map((item) => {
                                 const avatar = getCategoryAvatar(item);
                                 return (
-                                    <div key={`${item.type}-${item.id}`} className="flex items-center justify-between py-2 border-b border-border-primary/30 last:border-0">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm ${avatar.bg}`}>
-                                                {avatar.letter}
+                                    <div key={`${item.type}-${item.id}`} className="flex flex-col border-b border-border-primary/30 last:border-0 pb-2">
+                                        <div className="flex items-center justify-between py-2">
+                                            <div className="flex items-center gap-3">
+                                                <div 
+                                                    className={`w-9 h-9 rounded-lg flex items-center justify-center font-bold text-sm ${avatar.bg}`}
+                                                    style={avatar.style}
+                                                >
+                                                    {avatar.letter}
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-sm text-text-primary leading-snug">
+                                                        {item.title}
+                                                    </p>
+                                                    <p className="text-xs text-text-secondary mt-0.5 font-medium">
+                                                        {item.type === "income" ? "Income" : (item.category?.name || "General")} &middot; {formatDate(item.date)}
+                                                        {item.joyScore !== undefined && item.joyScore !== null && (
+                                                            <span className="text-accent-primary ml-2 font-semibold">Joy: {item.joyScore}</span>
+                                                        )}
+                                                    </p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-sm text-text-primary leading-snug">
-                                                    {item.title}
-                                                </p>
-                                                <p className="text-xs text-text-secondary mt-0.5 font-medium">
-                                                    {item.type === "income" ? "Income" : item.category} &middot; {formatDate(item.date)}
-                                                    {item.joyScore !== undefined && item.joyScore !== null && (
-                                                        <span className="text-accent-primary ml-2 font-semibold">Joy: {item.joyScore}</span>
-                                                    )}
+                                            <div className="text-right">
+                                                <p className={`font-bold text-sm ${item.type === "income" ? "text-[#2d9d5c]" : "text-[#e15a5a]"}`}>
+                                                    {item.type === "income" ? "↗" : "↘"} ₹{item.amount.toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <p className={`font-bold text-sm ${item.type === "income" ? "text-[#2d9d5c]" : "text-[#e15a5a]"}`}>
-                                                {item.type === "income" ? "↗" : "↘"} ₹{item.amount.toLocaleString()}
-                                            </p>
-                                        </div>
+                                        {/* Display merchant / location inline if available */}
+                                        {item.type === "expense" && (item.merchant || item.location) && (
+                                            <div className="pl-12 flex gap-4 text-[10px] text-text-secondary font-medium">
+                                                {item.merchant && <span>Store: <strong className="text-text-primary font-semibold">{item.merchant}</strong></span>}
+                                                {item.location && <span>Location: <strong className="text-text-primary font-semibold">{item.location}</strong></span>}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })
@@ -593,7 +626,7 @@ export default function Dashboard() {
                                                 </div>
                                                 <span className="text-accent-primary font-mono">{progress}%</span>
                                             </div>
-                                            
+
                                             {/* Progress bar container */}
                                             <div className="w-full bg-bg-primary h-2 rounded-full overflow-hidden border border-border-primary">
                                                 <div
@@ -620,7 +653,7 @@ export default function Dashboard() {
 
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
 
-                    <div className="bg-bg-secondary border border-border-primary rounded-xl shadow-2xl w-full max-w-md p-6 relative">
+                    <div className="bg-bg-secondary border border-border-primary rounded-xl shadow-2xl w-full max-w-md p-6 relative max-h-[90vh] overflow-y-auto">
 
                         <button
                             onClick={() => setIsModalOpen(false)}
@@ -643,7 +676,7 @@ export default function Dashboard() {
                                 <div className="grid grid-cols-2 gap-2 bg-bg-primary p-1 rounded-lg border border-border-primary">
                                     <button
                                         type="button"
-                                        onClick={() => setModalForm({ ...modalForm, type: "expense" })}
+                                        onClick={() => handleModalChange({ target: { name: "type", value: "expense" } })}
                                         className={`py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                                             modalForm.type === "expense"
                                                 ? "bg-[#e15a5a] text-white shadow"
@@ -654,7 +687,7 @@ export default function Dashboard() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setModalForm({ ...modalForm, type: "income" })}
+                                        onClick={() => handleModalChange({ target: { name: "type", value: "income" } })}
                                         className={`py-2 text-xs font-semibold rounded-md transition-all cursor-pointer ${
                                             modalForm.type === "income"
                                                 ? "bg-[#2d9d5c] text-white shadow"
@@ -695,18 +728,23 @@ export default function Dashboard() {
                                     />
                                 </div>
 
-                                {/* Category */}
+                                {/* Category Dropdown */}
                                 <div>
-                                    <label className="text-xs font-bold text-text-secondary uppercase mb-1 block">Category</label>
-                                    <input
-                                        type="text"
-                                        name="category"
-                                        value={modalForm.category}
+                                    <label className="text-xs font-bold text-text-secondary uppercase mb-1.5 block">Category</label>
+                                    <select
+                                        name="categoryId"
+                                        value={modalForm.categoryId}
                                         onChange={handleModalChange}
                                         required
-                                        className="w-full bg-bg-primary border border-border-primary rounded-lg p-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-primary"
-                                        placeholder="e.g. Food, Rent, Salary"
-                                    />
+                                        className="w-full bg-bg-primary border border-border-primary rounded-lg p-2.5 text-sm text-text-primary focus:outline-none focus:border-accent-primary cursor-pointer"
+                                    >
+                                        <option value="" className="bg-bg-secondary text-text-secondary">Select Category</option>
+                                        {categories.filter(c => modalForm.type === "expense" ? (c.type === "EXPENSE" || c.type === "BOTH") : (c.type === "INCOME" || c.type === "BOTH")).map(cat => (
+                                            <option key={cat.id} value={cat.id} className="bg-bg-secondary text-text-primary">
+                                                {cat.icon} {cat.name}
+                                            </option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
 
@@ -743,10 +781,76 @@ export default function Dashboard() {
                                 )}
                             </div>
 
+                            {/* Collapsible Advanced Details section */}
+                            {modalForm.type === "expense" && (
+                                <div className="border-t border-border-primary/45 pt-4 mt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAdvanced(!showAdvanced)}
+                                        className="text-xs font-bold text-accent-primary uppercase tracking-wider flex items-center gap-1.5 hover:text-accent-hover transition-colors cursor-pointer"
+                                    >
+                                        <span>{showAdvanced ? "▼" : "▶"} Advanced Details</span>
+                                    </button>
+
+                                    {showAdvanced && (
+                                        <div className="flex flex-col gap-4 mt-4 animate-fadeIn">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-text-secondary uppercase mb-1 block">Merchant</label>
+                                                    <input
+                                                        type="text"
+                                                        name="merchant"
+                                                        value={modalForm.merchant}
+                                                        onChange={handleModalChange}
+                                                        className="w-full bg-bg-primary border border-border-primary rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary"
+                                                        placeholder="e.g. Starbucks"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="text-[10px] font-bold text-text-secondary uppercase mb-1 block">Location</label>
+                                                    <input
+                                                        type="text"
+                                                        name="location"
+                                                        value={modalForm.location}
+                                                        onChange={handleModalChange}
+                                                        className="w-full bg-bg-primary border border-border-primary rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary"
+                                                        placeholder="e.g. Bandra"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-secondary uppercase mb-1 block">Joy Reason</label>
+                                                <input
+                                                    type="text"
+                                                    name="joyReason"
+                                                    value={modalForm.joyReason}
+                                                    onChange={handleModalChange}
+                                                    className="w-full bg-bg-primary border border-border-primary rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary"
+                                                    placeholder="e.g. Hanging out with close friends"
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-[10px] font-bold text-text-secondary uppercase mb-1 block">Receipt Image URL</label>
+                                                <input
+                                                    type="text"
+                                                    name="receiptImageUrl"
+                                                    value={modalForm.receiptImageUrl}
+                                                    onChange={handleModalChange}
+                                                    className="w-full bg-bg-primary border border-border-primary rounded-lg p-2 text-xs text-text-primary focus:outline-none focus:border-accent-primary"
+                                                    placeholder="https://example.com/receipt.jpg"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Save Button */}
                             <button
                                 type="submit"
-                                className="bg-accent-primary hover:bg-accent-hover text-black font-bold p-3 rounded-lg text-sm transition-all mt-2 cursor-pointer"
+                                className="bg-accent-primary hover:bg-accent-hover text-black font-bold p-3 rounded-lg text-sm transition-all mt-2 cursor-pointer shadow-lg shadow-accent-primary/10"
                             >
                                 Save Transaction
                             </button>
@@ -776,5 +880,3 @@ export default function Dashboard() {
     );
 
 }
-
-

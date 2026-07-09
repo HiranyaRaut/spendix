@@ -1,8 +1,10 @@
 package com.spendix.backend.controller;
 
 import com.spendix.backend.dto.TransactionDtos.IncomeRequest;
+import com.spendix.backend.entity.Category;
 import com.spendix.backend.entity.Income;
 import com.spendix.backend.entity.User;
+import com.spendix.backend.repository.CategoryRepository;
 import com.spendix.backend.repository.IncomeRepository;
 import com.spendix.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ public class IncomeController {
 
     private final IncomeRepository incomeRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     private User getUser(Principal principal) {
         return userRepository.findByEmail(principal.getName())
@@ -32,9 +35,19 @@ public class IncomeController {
 
     @PostMapping
     public ResponseEntity<Income> add(@RequestBody IncomeRequest req, Principal principal) {
+        Category category = null;
+        if (req.categoryId() != null) {
+            category = categoryRepository.findById(req.categoryId()).orElse(null);
+        }
+        if (category == null) {
+            category = categoryRepository.findByNameAndUserOrSystem("Salary", getUser(principal))
+                    .stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("Default Salary category not found"));
+        }
+
         Income income = Income.builder()
                 .title(req.title()).amount(req.amount())
-                .category(req.category()).date(req.date())
+                .category(category).date(req.date())
                 .user(getUser(principal)).build();
         return ResponseEntity.ok(incomeRepository.save(income));
     }

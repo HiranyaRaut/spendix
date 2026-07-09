@@ -22,4 +22,17 @@ public class User {
 
     @Column(columnDefinition = "LONGTEXT")
     private String profilePicture;
+
+    private String personality; // SAVER, SPENDER, BALANCED
+    private String motivation;  // EXPERIENCES, SECURITY, FREEDOM
+
+    @Builder.Default
+    private Boolean enabled = true;
+
+    @org.hibernate.annotations.CreationTimestamp
+    @Column(updatable = false)
+    private java.time.LocalDateTime createdAt;
+
+    @org.hibernate.annotations.UpdateTimestamp
+    private java.time.LocalDateTime updatedAt;
 }
