@@ -10,6 +10,7 @@ import Transactions from "./pages/Transactions";
 import Categories from "./pages/Categories";
 import Settings from "./pages/Settings";
 import Goals from "./pages/Goals";
+import Budgets from "./pages/Budgets";
 
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
@@ -59,6 +60,8 @@ export default function App() {
                 <Route path="/categories" element={<AppLayout><Categories /></AppLayout>} />
 
                 <Route path="/goals" element={<AppLayout><Goals /></AppLayout>} />
+
+                <Route path="/budgets" element={<AppLayout><Budgets /></AppLayout>} />
 
                 <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
 

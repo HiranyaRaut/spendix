@@ -13,6 +13,14 @@ public interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Expense> findByUser(User user);
 
     @Query("""
+            SELECT e FROM Expense e 
+            WHERE e.user = :user 
+            AND YEAR(e.date) = :year 
+            AND MONTH(e.date) = :month
+            """)
+    List<Expense> findByUserAndMonthAndYear(User user, Integer month, Integer year);
+
+    @Query("""
             SELECT new com.spendix.backend.dto.CategorySummaryDto(
                 e.category.name,
                 e.category.icon,

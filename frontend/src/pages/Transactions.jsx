@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 import MindfulPauseModal from "../components/MindfulPauseModal";
 
@@ -466,9 +466,8 @@ export default function Transactions() {
                                 const hasDetails = item.type === "expense" && (item.merchant || item.location || item.joyReason || item.receiptImageUrl);
 
                                 return (
-                                    <>
+                                    <React.Fragment key={rowKey}>
                                         <tr 
-                                            key={rowKey} 
                                             onClick={() => hasDetails && toggleRow(rowKey)}
                                             className={`hover:bg-bg-secondary/50 transition-colors ${hasDetails ? 'cursor-pointer' : ''}`}
                                         >
@@ -576,7 +575,7 @@ export default function Transactions() {
                                                 </td>
                                             </tr>
                                         )}
-                                    </>
+                                    </React.Fragment>
                                 );
                             })
                         ) : (

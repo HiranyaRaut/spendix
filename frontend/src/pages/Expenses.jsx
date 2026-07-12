@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import api from "../api/axios";
 
 export default function Expenses() {
@@ -260,9 +260,8 @@ export default function Expenses() {
                             const isExpanded = !!expandedRows[item.id];
                             const hasDetails = !!(item.merchant || item.location || item.joyReason || item.receiptImageUrl);
                             return (
-                                <>
+                                <React.Fragment key={item.id}>
                                     <tr 
-                                        key={item.id} 
                                         onClick={() => hasDetails && toggleRow(item.id)}
                                         className={`hover:bg-bg-secondary/50 transition-colors ${hasDetails ? 'cursor-pointer' : ''}`}
                                     >
@@ -354,7 +353,7 @@ export default function Expenses() {
                                             </td>
                                         </tr>
                                     )}
-                                </>
+                                </React.Fragment>
                             );
                         })}
                     </tbody>

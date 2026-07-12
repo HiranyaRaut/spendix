@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../api/axios";
 import { Doughnut } from "react-chartjs-2";
 import {
@@ -29,6 +30,7 @@ export default function Dashboard() {
     const [recentTransactions, setRecentTransactions] = useState([]);
     const [goals, setGoals] = useState([]);
     const [userName, setUserName] = useState("Hiranya");
+    const [budgetAlerts, setBudgetAlerts] = useState([]);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -96,6 +98,12 @@ export default function Dashboard() {
             // Sort by date descending
             combined.sort((a, b) => new Date(b.date) - new Date(a.date));
             setRecentTransactions(combined.slice(0, 6));
+
+            // Fetch budget alerts
+            const now = new Date();
+            const budgetRes = await api.get(`/budgets/summary?month=${now.getMonth() + 1}&year=${now.getFullYear()}`);
+            const alerts = budgetRes.data.filter(item => item.status === "WARNING" || item.status === "EXCEEDED");
+            setBudgetAlerts(alerts);
 
         } catch (error) {
             console.error("Error fetching dashboard data:", error);
@@ -326,6 +334,42 @@ export default function Dashboard() {
                 </button>
 
             </div>
+
+            {/* Budget Alerts Notifications */}
+            {budgetAlerts.length > 0 && (
+                <div className="mb-8 flex flex-col gap-3.5 max-w-5xl">
+                    {budgetAlerts.map(alert => (
+                        <div 
+                            key={alert.categoryId}
+                            className={`p-4 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+                                alert.status === "EXCEEDED"
+                                    ? "bg-red-500/10 border-red-500/35 text-red-400"
+                                    : "bg-amber-500/10 border-amber-500/35 text-amber-500"
+                            }`}
+                        >
+                            <div className="flex items-center gap-3">
+                                <span className="text-lg leading-none">
+                                    {alert.status === "EXCEEDED" ? "⚠️" : "⚡"}
+                                </span>
+                                <span className="leading-relaxed">
+                                    {alert.status === "EXCEEDED" ? (
+                                        <>
+                                            Budget Exceeded: You've spent <span className="font-bold font-mono">₹{alert.actualSpent.toLocaleString()}</span> in <span className="font-bold">{alert.categoryIcon} {alert.categoryName}</span>, exceeding your monthly limit of <span className="font-bold font-mono">₹{alert.budgetedAmount.toLocaleString()}</span>!
+                                        </>
+                                    ) : (
+                                        <>
+                                            Budget Warning: You've used <span className="font-bold font-mono">{Math.round((alert.actualSpent / alert.budgetedAmount) * 100)}%</span> of your <span className="font-bold font-mono">₹{alert.budgetedAmount.toLocaleString()}</span> limit in <span className="font-bold">{alert.categoryIcon} {alert.categoryName}</span> (Spent: <span className="font-bold font-mono">₹{alert.actualSpent.toLocaleString()}</span>).
+                                        </>
+                                    )}
+                                </span>
+                            </div>
+                            <Link to="/budgets" className="underline hover:opacity-85 text-[10px] font-bold uppercase tracking-wider shrink-0 ml-4 cursor-pointer">
+                                Manage &rarr;
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Core Stats row */}
             <div className="grid grid-cols-4 gap-6 mb-6">
