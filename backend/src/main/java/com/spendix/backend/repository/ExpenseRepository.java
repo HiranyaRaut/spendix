@@ -11,6 +11,7 @@ import java.util.List;
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     List<Expense> findByUser(User user);
+    List<Expense> findByUserAndDateBetween(User user, java.time.LocalDate startDate, java.time.LocalDate endDate);
 
     @Query("""
             SELECT e FROM Expense e 

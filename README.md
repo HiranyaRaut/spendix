@@ -76,11 +76,11 @@ FLUSH PRIVILEGES;
  🗺️ Roadmap
 
 - [x] Project setup & database config
-- [ ] JWT Authentication
-- [ ] Income & Expense CRUD
-- [ ] Dashboard & Charts
-- [ ] Budget module
-- [ ] Reports (PDF/Excel export)
+- [x] JWT Authentication
+- [x] Income & Expense CRUD
+- [x] Dashboard & Charts
+- [x] Budget module
+- [x] Reports (PDF/Excel export)
 - [ ] Deployment
 
 📄 License

@@ -11,6 +11,7 @@ import Categories from "./pages/Categories";
 import Settings from "./pages/Settings";
 import Goals from "./pages/Goals";
 import Budgets from "./pages/Budgets";
+import Reports from "./pages/Reports";
 
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
@@ -62,6 +63,8 @@ export default function App() {
                 <Route path="/goals" element={<AppLayout><Goals /></AppLayout>} />
 
                 <Route path="/budgets" element={<AppLayout><Budgets /></AppLayout>} />
+
+                <Route path="/reports" element={<AppLayout><Reports /></AppLayout>} />
 
                 <Route path="/settings" element={<AppLayout><Settings /></AppLayout>} />
 
