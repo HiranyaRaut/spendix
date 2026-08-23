@@ -23,7 +23,8 @@ public class GroupDtos {
             Double amount,
             String paidBy,
             LocalDate date,
-            List<String> participants
+            List<String> participants,
+            String note
     ) {}
 
     public record GroupExpenseResponse(
@@ -32,12 +33,17 @@ public class GroupDtos {
             Double amount,
             String paidBy,
             LocalDate date,
-            List<String> participants
+            List<String> participants,
+            String note
     ) {}
 
     public record DebtTransfer(
             String from,
             String to,
             Double amount
+    ) {}
+
+    public record AddMemberRequest(
+            String name
     ) {}
 }

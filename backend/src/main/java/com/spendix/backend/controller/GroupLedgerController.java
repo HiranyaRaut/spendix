@@ -107,7 +107,8 @@ public class GroupLedgerController {
                         e.getAmount(),
                         e.getPaidBy(),
                         e.getDate(),
-                        e.getParticipants()
+                        e.getParticipants(),
+                        e.getNote()
                 ))
                 .collect(Collectors.toList());
 
@@ -137,6 +138,60 @@ public class GroupLedgerController {
         groupRepository.delete(group);
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{id}/members")
+    public ResponseEntity<?> addMember(
+            @PathVariable Long id,
+            @RequestBody AddMemberRequest req,
+            Principal principal) {
+        User user = getUser(principal);
+        Group group = groupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        if (!group.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        if (req.name() == null || req.name().isBlank()) {
+            return ResponseEntity.badRequest().body("Member name is required");
+        }
+
+        String newMemberName = req.name().trim();
+
+        // Check if member already exists (case-insensitive)
+        boolean exists = group.getMembers().stream()
+                .anyMatch(m -> m.equalsIgnoreCase(newMemberName));
+        if (exists) {
+            return ResponseEntity.badRequest().body("Member already exists in the group");
+        }
+
+        group.getMembers().add(newMemberName);
+        groupRepository.save(group);
+
+        List<GroupExpense> expenses = groupExpenseRepository.findByGroup(group);
+
+        List<GroupExpenseResponse> expenseResponses = expenses.stream()
+                .map(e -> new GroupExpenseResponse(
+                        e.getId(),
+                        e.getDescription(),
+                        e.getAmount(),
+                        e.getPaidBy(),
+                        e.getDate(),
+                        e.getParticipants(),
+                        e.getNote()
+                ))
+                .collect(Collectors.toList());
+
+        List<DebtTransfer> debtTransfers = calculateDebtTransfers(group.getMembers(), expenses);
+
+        return ResponseEntity.ok(new GroupResponse(
+                group.getId(),
+                group.getName(),
+                group.getMembers(),
+                expenseResponses,
+                debtTransfers
+        ));
     }
 
     @PostMapping("/{id}/expenses")
@@ -203,6 +258,7 @@ public class GroupLedgerController {
                 .date(req.date() != null ? req.date() : LocalDate.now())
                 .group(group)
                 .participants(participants)
+                .note(req.note() != null ? req.note().trim() : null)
                 .build();
 
         GroupExpense saved = groupExpenseRepository.save(expense);
@@ -213,7 +269,8 @@ public class GroupLedgerController {
                 saved.getAmount(),
                 saved.getPaidBy(),
                 saved.getDate(),
-                saved.getParticipants()
+                saved.getParticipants(),
+                saved.getNote()
         ));
     }
 
@@ -240,6 +297,56 @@ public class GroupLedgerController {
         groupExpenseRepository.delete(expense);
 
         return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{id}/expenses/{expenseId}/note")
+    public ResponseEntity<?> updateExpenseNote(
+            @PathVariable Long id,
+            @PathVariable Long expenseId,
+            @RequestBody Map<String, String> body,
+            Principal principal) {
+        User user = getUser(principal);
+        Group group = groupRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Group not found"));
+
+        if (!group.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(403).body("Access Denied");
+        }
+
+        GroupExpense expense = groupExpenseRepository.findById(expenseId)
+                .orElseThrow(() -> new RuntimeException("Expense not found"));
+
+        if (!expense.getGroup().getId().equals(group.getId())) {
+            return ResponseEntity.badRequest().body("Expense does not belong to this group");
+        }
+
+        String newNote = body.get("note");
+        expense.setNote(newNote != null ? newNote.trim() : null);
+        groupExpenseRepository.save(expense);
+
+        List<GroupExpense> expenses = groupExpenseRepository.findByGroup(group);
+
+        List<GroupExpenseResponse> expenseResponses = expenses.stream()
+                .map(e -> new GroupExpenseResponse(
+                        e.getId(),
+                        e.getDescription(),
+                        e.getAmount(),
+                        e.getPaidBy(),
+                        e.getDate(),
+                        e.getParticipants(),
+                        e.getNote()
+                ))
+                .collect(Collectors.toList());
+
+        List<DebtTransfer> debtTransfers = calculateDebtTransfers(group.getMembers(), expenses);
+
+        return ResponseEntity.ok(new GroupResponse(
+                group.getId(),
+                group.getName(),
+                group.getMembers(),
+                expenseResponses,
+                debtTransfers
+        ));
     }
 
     // Debt Simplification Algorithm

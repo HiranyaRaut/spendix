@@ -1,5 +1,6 @@
 com\spendix\backend\BackendApplication.class
 com\spendix\backend\dto\AuthDtos.class
+com\spendix\backend\dto\GroupDtos$AddMemberRequest.class
 com\spendix\backend\entity\JoyGoal$JoyGoalBuilder.class
 com\spendix\backend\dto\UserDtos$UserProfileResponse.class
 com\spendix\backend\controller\CategoryController.class

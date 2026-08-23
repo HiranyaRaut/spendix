@@ -25,6 +25,8 @@ public class GroupExpense {
 
     private LocalDate date;
 
+    private String note;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;

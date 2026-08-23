@@ -17,9 +17,19 @@ export default function GroupLedger() {
         amount: "",
         paidBy: "",
         date: new Date().toISOString().split("T")[0],
-        participants: [] // names of members involved
+        participants: [], // names of members involved
+        note: ""
     });
     const [expenseError, setExpenseError] = useState("");
+
+    // Add member state
+    const [isAddingMember, setIsAddingMember] = useState(false);
+    const [newMemberNameInput, setNewMemberNameInput] = useState("");
+    const [addMemberError, setAddMemberError] = useState("");
+
+    // Edit note state
+    const [editingExpenseId, setEditingExpenseId] = useState(null);
+    const [editingNoteValue, setEditingNoteValue] = useState("");
 
     useEffect(() => {
         fetchGroups();
@@ -49,11 +59,49 @@ export default function GroupLedger() {
                 amount: "",
                 paidBy: groupData.members[0] || "",
                 date: new Date().toISOString().split("T")[0],
-                participants: [...groupData.members] // default to all members
+                participants: [...groupData.members], // default to all members
+                note: ""
             });
             setExpenseError("");
         } catch (err) {
             console.error("Error fetching group details:", err);
+        }
+    };
+
+    const handleAddMember = async (e) => {
+        e.preventDefault();
+        setAddMemberError("");
+
+        const nameTrimmed = newMemberNameInput.trim();
+        if (!nameTrimmed) {
+            setAddMemberError("Name cannot be empty");
+            return;
+        }
+
+        try {
+            const res = await api.post(`/groups/${selectedGroup.id}/members`, {
+                name: nameTrimmed
+            });
+            const updatedGroup = res.data;
+            setSelectedGroup(updatedGroup);
+
+            setExpenseForm(prev => {
+                const isAllSelected = prev.participants.length === selectedGroup.members.length;
+                const newParticipants = isAllSelected 
+                    ? [...updatedGroup.members] 
+                    : prev.participants;
+
+                return {
+                    ...prev,
+                    participants: newParticipants
+                };
+            });
+
+            setNewMemberNameInput("");
+            setIsAddingMember(false);
+        } catch (err) {
+            console.error("Error adding member:", err);
+            setAddMemberError(err.response?.data || "Failed to add member");
         }
     };
 
@@ -149,14 +197,16 @@ export default function GroupLedger() {
                 amount: amt,
                 paidBy: expenseForm.paidBy,
                 date: expenseForm.date,
-                participants: expenseForm.participants
+                participants: expenseForm.participants,
+                note: expenseForm.note
             });
             // Reset expense fields keeping date and participants (defaults to all)
             setExpenseForm(prev => ({
                 ...prev,
                 description: "",
                 amount: "",
-                participants: [...selectedGroup.members]
+                participants: [...selectedGroup.members],
+                note: ""
             }));
             fetchGroupDetails(selectedGroup.id);
         } catch (err) {
@@ -171,6 +221,19 @@ export default function GroupLedger() {
             fetchGroupDetails(selectedGroup.id);
         } catch (err) {
             console.error("Error deleting expense:", err);
+        }
+    };
+
+    const handleSaveNote = async (expenseId) => {
+        try {
+            const res = await api.patch(`/groups/${selectedGroup.id}/expenses/${expenseId}/note`, {
+                note: editingNoteValue
+            });
+            setSelectedGroup(res.data);
+            setEditingExpenseId(null);
+        } catch (err) {
+            console.error("Error saving note:", err);
+            alert("Failed to save note");
         }
     };
 
@@ -376,10 +439,63 @@ export default function GroupLedger() {
                                 {selectedGroup.name}
                             </h1>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <span className="text-xs text-text-secondary">
-                                Members: <strong className="text-text-primary">{selectedGroup.members.join(", ")}</strong>
+                        <div className="flex flex-col items-start md:items-end gap-2">
+                            <span className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">
+                                Group Members
                             </span>
+                            <div className="flex flex-wrap items-center gap-1.5 max-w-xl md:justify-end">
+                                {selectedGroup.members.map((member) => (
+                                    <span
+                                        key={member}
+                                        className="text-xs bg-bg-secondary px-2.5 py-1 rounded-full border border-border-primary text-text-primary font-medium shadow-sm hover:border-accent-primary/40 transition-colors"
+                                    >
+                                        {member}
+                                    </span>
+                                ))}
+                                
+                                {isAddingMember ? (
+                                    <form onSubmit={handleAddMember} className="flex items-center gap-1">
+                                        <input
+                                            type="text"
+                                            value={newMemberNameInput}
+                                            onChange={(e) => setNewMemberNameInput(e.target.value)}
+                                            placeholder="Enter name"
+                                            className="bg-bg-primary border border-accent-primary px-2.5 py-1 rounded-full text-xs text-text-primary focus:outline-none w-28 placeholder:text-text-secondary/50 font-medium"
+                                            autoFocus
+                                            required
+                                        />
+                                        <button
+                                            type="submit"
+                                            className="bg-accent-primary hover:bg-accent-hover text-black px-2.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-all"
+                                        >
+                                            Add
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setIsAddingMember(false);
+                                                setNewMemberNameInput("");
+                                                setAddMemberError("");
+                                            }}
+                                            className="text-text-secondary hover:text-red-400 text-xs font-bold px-1.5 py-0.5 cursor-pointer"
+                                        >
+                                            ✕
+                                        </button>
+                                    </form>
+                                ) : (
+                                    <button
+                                        onClick={() => setIsAddingMember(true)}
+                                        className="text-xs bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary border border-accent-primary/20 hover:border-accent-primary/40 px-3 py-1 rounded-full font-bold transition-all duration-300 cursor-pointer flex items-center gap-1"
+                                    >
+                                        <span className="text-sm font-normal">+</span> Add Member
+                                    </button>
+                                )}
+                            </div>
+                            {addMemberError && (
+                                <p className="text-red-400 text-[11px] font-semibold mt-0.5">
+                                    {addMemberError}
+                                </p>
+                            )}
                         </div>
                     </div>
 
@@ -414,7 +530,7 @@ export default function GroupLedger() {
                                     Add Group Expense
                                 </h2>
 
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                                     <div className="flex flex-col gap-1.5">
                                         <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Description</label>
                                         <input
@@ -460,6 +576,16 @@ export default function GroupLedger() {
                                             onChange={(e) => setExpenseForm({ ...expenseForm, date: e.target.value })}
                                             className="bg-bg-primary border border-border-primary p-2.5 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                                             required
+                                        />
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider">Note (Optional)</label>
+                                        <input
+                                            type="text"
+                                            placeholder="e.g. Birthday bash"
+                                            value={expenseForm.note}
+                                            onChange={(e) => setExpenseForm({ ...expenseForm, note: e.target.value })}
+                                            className="bg-bg-primary border border-border-primary p-2.5 rounded text-text-primary focus:outline-none focus:border-accent-primary text-sm"
                                         />
                                     </div>
                                 </div>
@@ -539,6 +665,7 @@ export default function GroupLedger() {
                                         <thead className="bg-bg-sidebar text-text-secondary text-[10px] font-bold tracking-wider uppercase border-b border-border-primary">
                                             <tr>
                                                 <th className="p-4 text-left">Description</th>
+                                                <th className="p-4 text-left">Note</th>
                                                 <th className="p-4 text-left">Paid By</th>
                                                 <th className="p-4 text-left">Split Participants</th>
                                                 <th className="p-4 text-left">Date</th>
@@ -550,6 +677,55 @@ export default function GroupLedger() {
                                             {selectedGroup.expenses.map((exp) => (
                                                 <tr key={exp.id} className="hover:bg-bg-secondary/40 transition-colors">
                                                     <td className="p-4 font-semibold text-text-primary">{exp.description}</td>
+                                                    <td className="p-4 text-text-secondary">
+                                                         {editingExpenseId === exp.id ? (
+                                                             <div className="flex items-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                                                 <input
+                                                                     type="text"
+                                                                     value={editingNoteValue}
+                                                                     onChange={(e) => setEditingNoteValue(e.target.value)}
+                                                                     placeholder="Note..."
+                                                                     className="bg-bg-primary border border-accent-primary px-2 py-1 rounded text-xs text-text-primary focus:outline-none w-32 font-medium"
+                                                                     autoFocus
+                                                                     onKeyDown={(e) => {
+                                                                         if (e.key === "Enter") handleSaveNote(exp.id);
+                                                                         if (e.key === "Escape") setEditingExpenseId(null);
+                                                                     }}
+                                                                 />
+                                                                 <button
+                                                                     onClick={() => handleSaveNote(exp.id)}
+                                                                     className="text-emerald-400 hover:text-emerald-300 font-bold px-1 cursor-pointer text-sm"
+                                                                     title="Save"
+                                                                 >
+                                                                     ✓
+                                                                 </button>
+                                                                 <button
+                                                                     onClick={() => setEditingExpenseId(null)}
+                                                                     className="text-red-400 hover:text-red-300 font-bold px-1 cursor-pointer text-sm"
+                                                                     title="Cancel"
+                                                                 >
+                                                                     ✕
+                                                                 </button>
+                                                             </div>
+                                                         ) : (
+                                                             <div
+                                                                 onClick={() => {
+                                                                     setEditingExpenseId(exp.id);
+                                                                     setEditingNoteValue(exp.note || "");
+                                                                 }}
+                                                                 className="cursor-pointer group/note flex items-center gap-1.5 min-h-[24px]"
+                                                             >
+                                                                 {exp.note ? (
+                                                                     <span className="italic">{exp.note}</span>
+                                                                 ) : (
+                                                                     <span className="text-text-secondary/40 group-hover/note:text-text-secondary/70 transition-colors text-[11px] font-medium">+ Add note</span>
+                                                                 )}
+                                                                 <span className="opacity-0 group-hover/note:opacity-100 text-accent-primary transition-opacity text-[10px]">
+                                                                     ✎
+                                                                 </span>
+                                                             </div>
+                                                         )}
+                                                     </td>
                                                     <td className="p-4 text-text-secondary font-medium">{exp.paidBy}</td>
                                                     <td className="p-4 text-text-secondary">
                                                         <span className="inline-block max-w-[200px] truncate" title={exp.participants.join(", ")}>
