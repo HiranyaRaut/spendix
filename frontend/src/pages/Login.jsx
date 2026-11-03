@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/axios";
+import { enableDemoMode } from "../api/demoData";
 
 export default function Login() {
 
@@ -22,6 +23,7 @@ export default function Login() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setError("");
 
         try {
             const response = await api.post("/auth/login", form);
@@ -32,8 +34,17 @@ export default function Login() {
             navigate("/");
 
         } catch (err) {
-            setError(err.response?.data || "Login Failed");
+            if (!err.response) {
+                setError("Backend is unreachable. Click 'Instant Live Demo' below to preview the app!");
+            } else {
+                setError(typeof err.response?.data === "string" ? err.response.data : "Login Failed. Check your credentials.");
+            }
         }
+    };
+
+    const handleDemoLogin = () => {
+        enableDemoMode();
+        navigate("/");
     };
 
     return (
@@ -94,9 +105,28 @@ export default function Login() {
                 </div>
 
                 <button
+                    type="submit"
                     className="w-full bg-accent-primary hover:bg-accent-hover text-black font-bold p-3 rounded-lg text-sm transition-all shadow-lg shadow-accent-primary/15 cursor-pointer"
                 >
                     Log In
+                </button>
+
+                {/* Live Demo Divider and Action */}
+                <div className="relative my-6 flex items-center justify-center">
+                    <div className="border-t border-border-primary w-full"></div>
+                    <span className="bg-bg-secondary px-3 text-[11px] text-text-secondary uppercase tracking-widest font-semibold whitespace-nowrap">
+                        Or Try Live Demo
+                    </span>
+                    <div className="border-t border-border-primary w-full"></div>
+                </div>
+
+                <button
+                    type="button"
+                    onClick={handleDemoLogin}
+                    className="w-full border border-accent-primary/60 hover:border-accent-primary bg-accent-primary/10 hover:bg-accent-primary/20 text-accent-primary font-bold p-3 rounded-lg text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                >
+                    <span className="text-base">⚡</span>
+                    <span>Instant Live Demo (Guest Access)</span>
                 </button>
 
                 <p className="text-center mt-6 text-sm text-text-secondary">
@@ -114,5 +144,3 @@ export default function Login() {
         </div>
     );
 }
-
-

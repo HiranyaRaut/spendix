@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import api from "../api/axios";
+import { isDemoMode, resetDemoData, disableDemoMode } from "../api/demoData";
 
 export default function Navbar() {
 
@@ -11,6 +12,8 @@ export default function Navbar() {
         email: "",
         profilePicture: ""
     });
+
+    const isDemo = isDemoMode();
 
     useEffect(() => {
         fetchProfile();
@@ -29,9 +32,16 @@ export default function Navbar() {
     };
 
     const logout = () => {
+        disableDemoMode();
         localStorage.removeItem("token");
         localStorage.removeItem("name");
+        localStorage.removeItem("email");
         navigate("/login");
+    };
+
+    const handleResetDemo = () => {
+        resetDemoData();
+        window.location.reload();
     };
 
     const isActive = (path) => location.pathname === path;
@@ -101,6 +111,24 @@ export default function Navbar() {
             )
         },
         {
+            name: "Income",
+            path: "/income",
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+            )
+        },
+        {
+            name: "Expenses",
+            path: "/expenses",
+            icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12H4" />
+                </svg>
+            )
+        },
+        {
             name: "Settings",
             path: "/settings",
             icon: (
@@ -114,12 +142,12 @@ export default function Navbar() {
 
     return (
 
-        <aside className="w-64 bg-bg-sidebar border-r border-border-primary flex flex-col justify-between p-6 min-h-screen sticky top-0 shrink-0">
+        <aside className="w-64 bg-bg-secondary border-r border-border-primary min-h-screen p-6 flex flex-col justify-between shrink-0">
 
             <div>
 
                 {/* Brand / Logo */}
-                <div className="flex items-center gap-3 mb-10 mt-2">
+                <div className="flex items-center gap-3 mb-6 mt-2">
 
                     <div className="w-10 h-10 rounded-full bg-accent-primary flex items-center justify-center text-black font-serif italic text-xl font-bold shadow-md shadow-accent-primary/10">
                         J
@@ -138,6 +166,24 @@ export default function Navbar() {
                     </div>
 
                 </div>
+
+                {/* Demo Mode Badge */}
+                {isDemo && (
+                    <div className="mb-6 p-2.5 rounded-lg bg-accent-primary/10 border border-accent-primary/30 flex items-center justify-between text-xs">
+                        <span className="text-accent-primary font-semibold flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-accent-primary animate-pulse"></span>
+                            Live Demo Mode
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleResetDemo}
+                            title="Reset demo data to initial state"
+                            className="text-[11px] text-text-secondary hover:text-accent-primary underline cursor-pointer"
+                        >
+                            Reset
+                        </button>
+                    </div>
+                )}
 
                 {/* Navigation Links */}
                 <nav className="flex flex-col gap-2">
@@ -182,7 +228,7 @@ export default function Navbar() {
                         {(profile.name || "J").charAt(0).toUpperCase()}
                     </div>
                 )}
-                <div className="overflow-hidden">
+                <div className="overflow-hidden flex-1">
                     <p className="text-sm font-semibold text-text-primary truncate leading-tight">
                         {profile.name}
                     </p>
@@ -204,7 +250,7 @@ export default function Navbar() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
 
-                    Logout
+                    {isDemo ? "Exit Demo" : "Logout"}
 
                 </button>
 
@@ -215,5 +261,3 @@ export default function Navbar() {
     );
 
 }
-
-

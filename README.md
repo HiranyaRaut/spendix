@@ -81,7 +81,35 @@ FLUSH PRIVILEGES;
 - [x] Dashboard & Charts
 - [x] Budget module
 - [x] Reports (PDF/Excel export)
-- [ ] Deployment
+- [x] Deployment (Vercel Live Demo configured)
+
+🌐 Live Demo & Deployment to Vercel
+
+### Option 1: Deploy with Vercel Dashboard (Recommended)
+
+1. Push your changes to your GitHub repository:
+   ```bash
+   git add .
+   git commit -m "Configure Vercel live demo"
+   git push origin main
+   ```
+2. Go to [vercel.com/new](https://vercel.com/new) and import your `spendix` repository.
+3. Configure the project:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `frontend` (or leave as `./` — root `vercel.json` will handle it automatically)
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Click **Deploy**! 🚀
+5. Once deployed, open your live link. Click **"⚡ Instant Live Demo (Guest Access)"** to immediately preview all features, charts, and budget tools with pre-loaded demo data!
+
+### Connecting a Live Backend (Optional)
+
+If you host your Spring Boot backend on [Render](https://render.com), [Railway](https://railway.app), or [Koyeb](https://www.koyeb.com):
+1. In your Vercel project dashboard, go to **Settings > Environment Variables**.
+2. Add:
+   - `VITE_API_URL` = `https://your-backend-api.onrender.com/api`
+3. Redeploy the application.
+
 
 📄 License
 
