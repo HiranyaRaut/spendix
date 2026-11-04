@@ -378,7 +378,10 @@ export async function handleDemoRequest(config) {
     if (!url.startsWith("/")) url = "/" + url;
 
     const [path, queryString] = url.split("?");
-    const params = new URLSearchParams(queryString || "");
+    const queryParams = {
+        ...(config.params || {}),
+        ...Object.fromEntries(new URLSearchParams(queryString || "").entries()),
+    };
     const body = typeof config.data === "string" ? JSON.parse(config.data || "{}") : config.data || {};
 
     const data = loadDemoData();
@@ -799,39 +802,122 @@ export async function handleDemoRequest(config) {
 
     // 10. Reports
     if (path === "/reports/summary") {
-        const totalIncome = data.incomes.reduce((acc, i) => acc + Number(i.amount || 0), 0);
-        const totalExpense = data.expenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
-        const categorySummaries = {};
+        const startDate = queryParams.startDate || "2000-01-01";
+        const endDate = queryParams.endDate || "2099-12-31";
+        const categoryFilter = queryParams.category;
 
-        data.expenses.forEach((e) => {
-            const cName = e.category?.name || "General";
-            categorySummaries[cName] = (categorySummaries[cName] || 0) + Number(e.amount || 0);
+        let filteredIncomes = (data.incomes || []).filter(i => (!i.date || (i.date >= startDate && i.date <= endDate)));
+        let filteredExpenses = (data.expenses || []).filter(e => (!e.date || (e.date >= startDate && e.date <= endDate)));
+
+        if (categoryFilter && categoryFilter !== "ALL" && categoryFilter.trim() !== "") {
+            filteredIncomes = filteredIncomes.filter(i => (i.category?.name || "").toLowerCase() === categoryFilter.toLowerCase());
+            filteredExpenses = filteredExpenses.filter(e => (e.category?.name || "").toLowerCase() === categoryFilter.toLowerCase());
+        }
+
+        const totalIncome = filteredIncomes.reduce((acc, i) => acc + Number(i.amount || 0), 0);
+        const totalExpense = filteredExpenses.reduce((acc, e) => acc + Number(e.amount || 0), 0);
+
+        const categoryMap = {};
+        filteredExpenses.forEach((e) => {
+            const catName = e.category?.name || "General";
+            const icon = e.category?.icon || "🏷️";
+            const color = e.category?.color || "#c5a059";
+            const amt = Number(e.amount || 0);
+
+            if (!categoryMap[catName]) {
+                categoryMap[catName] = {
+                    category: catName,
+                    categoryName: catName,
+                    icon,
+                    color,
+                    amount: 0,
+                    totalAmount: 0,
+                };
+            }
+            categoryMap[catName].amount += amt;
+            categoryMap[catName].totalAmount += amt;
         });
 
+        const categorySummaries = Object.values(categoryMap).sort((a, b) => b.amount - a.amount);
+
         const recent = [
-            ...data.incomes.map((i) => ({ ...i, type: "income" })),
-            ...data.expenses.map((e) => ({ ...e, type: "expense" })),
+            ...filteredIncomes.map((i) => ({
+                id: i.id,
+                type: "INCOME",
+                title: i.title,
+                amount: Number(i.amount || 0),
+                category: i.category?.name || "Income",
+                date: i.date,
+                paymentMethod: i.paymentMethod || "Bank Transfer",
+                merchant: i.merchant || "",
+            })),
+            ...filteredExpenses.map((e) => ({
+                id: e.id,
+                type: "EXPENSE",
+                title: e.title,
+                amount: Number(e.amount || 0),
+                category: e.category?.name || "General",
+                date: e.date,
+                paymentMethod: e.paymentMethod || "Card",
+                merchant: e.merchant || "",
+            })),
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         return ok({
+            startDate,
+            endDate,
             totalIncome,
             totalExpense,
             netBalance: totalIncome - totalExpense,
-            totalTransactions: data.incomes.length + data.expenses.length,
-            categorySummaries: Object.entries(categorySummaries).map(([cat, total]) => ({
-                categoryName: cat,
-                totalAmount: total,
-            })),
-            recentTransactions: recent.slice(0, 10),
+            totalTransactions: recent.length,
+            categorySummaries,
+            recentTransactions: recent,
         });
     }
 
-    if (path.startsWith("/reports/export/")) {
-        // Mock binary blob download
-        const dummyBlob = new Blob(["Spendix Demo Report Generated Successfully"], {
-            type: "text/plain",
-        });
-        return ok(dummyBlob);
+    if (path === "/reports/pdf" || path === "/reports/excel" || path.startsWith("/reports/export/")) {
+        const isPdf = path.includes("pdf");
+        const startDate = queryParams.startDate || "2026-01-01";
+        const endDate = queryParams.endDate || "2026-12-31";
+        
+        if (isPdf) {
+            // Generate a valid PDF binary
+            const title = `Spendix Statement: ${startDate} to ${endDate}`;
+            const streamContent = `BT /F1 16 Tf 50 780 Td (${title}) Tj ET\n` +
+                `BT /F1 12 Tf 50 750 Td (Generated by Spendix Financial Management - Mindful Money Ledger) Tj ET\n` +
+                `BT /F1 10 Tf 50 720 Td (Date Range: ${startDate} to ${endDate}) Tj ET\n` +
+                `BT /F1 10 Tf 50 700 Td (Total Records: ${data.incomes.length + data.expenses.length}) Tj ET\n` +
+                `BT /F1 10 Tf 50 670 Td (Status: Verified and Exported Successfully) Tj ET\n`;
+            const streamLen = streamContent.length;
+            const pdfData = `%PDF-1.4\n1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n5 0 obj\n<< /Length ${streamLen} >>\nstream\n${streamContent}\nendstream\nendobj\nxref\n0 6\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000224 00000 n \n0000000293 00000 n \ntrailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${350 + streamLen}\n%%EOF`;
+            
+            const pdfBlob = new Blob([pdfData], { type: "application/pdf" });
+            return {
+                data: pdfBlob,
+                status: 200,
+                statusText: "OK",
+                headers: { "content-type": "application/pdf" },
+                config,
+            };
+        } else {
+            // Generate a valid CSV / spreadsheet format
+            let csv = "Date,Type,Title,Category,Amount,Payment Method,Merchant\r\n";
+            const rows = [
+                ...(data.incomes || []).map(i => `"${i.date}","INCOME","${(i.title || '').replace(/"/g, '""')}","${(i.category?.name || 'Income').replace(/"/g, '""')}","${i.amount}","${i.paymentMethod || 'Bank Transfer'}","${i.merchant || ''}"`),
+                ...(data.expenses || []).map(e => `"${e.date}","EXPENSE","${(e.title || '').replace(/"/g, '""')}","${(e.category?.name || 'General').replace(/"/g, '""')}","${e.amount}","${e.paymentMethod || 'Card'}","${e.merchant || ''}"`),
+            ];
+            csv += rows.join("\r\n");
+            const excelBlob = new Blob([csv], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            });
+            return {
+                data: excelBlob,
+                status: 200,
+                statusText: "OK",
+                headers: { "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" },
+                config,
+            };
+        }
     }
 
     // Fallback for unhandled endpoints in demo mode

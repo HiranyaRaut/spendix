@@ -247,23 +247,23 @@ export default function Reports() {
                 <div className="bg-bg-sidebar border border-border-primary p-5 rounded-xl">
                     <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Total Income</p>
                     <p className="text-2xl font-bold text-emerald-400 mt-2 font-mono">
-                        ${summary.totalIncome ? summary.totalIncome.toFixed(2) : "0.00"}
+                        ₹{Number(summary.totalIncome || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                 </div>
 
                 <div className="bg-bg-sidebar border border-border-primary p-5 rounded-xl">
                     <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Total Expenses</p>
                     <p className="text-2xl font-bold text-red-400 mt-2 font-mono">
-                        ${summary.totalExpense ? summary.totalExpense.toFixed(2) : "0.00"}
+                        ₹{Number(summary.totalExpense || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                 </div>
 
                 <div className="bg-bg-sidebar border border-border-primary p-5 rounded-xl">
                     <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Net Balance</p>
                     <p className={`text-2xl font-bold mt-2 font-mono ${
-                        summary.netBalance >= 0 ? "text-emerald-400" : "text-red-400"
+                        Number(summary.netBalance || 0) >= 0 ? "text-emerald-400" : "text-red-400"
                     }`}>
-                        ${summary.netBalance ? summary.netBalance.toFixed(2) : "0.00"}
+                        ₹{Number(summary.netBalance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                 </div>
 
@@ -285,24 +285,30 @@ export default function Reports() {
 
                     {summary.categorySummaries && summary.categorySummaries.length > 0 ? (
                         <div className="space-y-4">
-                            {summary.categorySummaries.map((cat) => {
-                                const pct = summary.totalExpense > 0 
-                                    ? ((cat.amount / summary.totalExpense) * 100).toFixed(1) 
-                                    : 0;
+                            {summary.categorySummaries.map((cat, idx) => {
+                                const amount = Number(cat.amount || cat.totalAmount || 0);
+                                const totalExp = Number(summary.totalExpense || 0);
+                                const pct = totalExp > 0 
+                                    ? ((amount / totalExp) * 100).toFixed(1) 
+                                    : "0.0";
+                                const catName = typeof cat.category === "object" ? (cat.category?.name || "General") : (cat.category || cat.categoryName || "General");
+                                const catIcon = cat.icon || "🏷️";
+                                const catColor = cat.color || "#eab308";
+
                                 return (
-                                    <div key={cat.category} className="space-y-1">
+                                    <div key={cat.category || idx} className="space-y-1">
                                         <div className="flex justify-between text-sm">
                                             <span className="text-text-primary font-medium flex items-center gap-2">
-                                                <span>{cat.icon}</span> {cat.category}
+                                                <span>{catIcon}</span> {catName}
                                             </span>
-                                            <span className="text-text-secondary font-mono">${cat.amount.toFixed(2)} ({pct}%)</span>
+                                            <span className="text-text-secondary font-mono">₹{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({pct}%)</span>
                                         </div>
                                         <div className="w-full bg-bg-primary h-2 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full rounded-full transition-all duration-300"
                                                 style={{
-                                                    width: `${Math.min(pct, 100)}%`,
-                                                    backgroundColor: cat.color || "#eab308"
+                                                    width: `${Math.min(parseFloat(pct) || 0, 100)}%`,
+                                                    backgroundColor: catColor
                                                 }}
                                             />
                                         </div>
@@ -343,27 +349,33 @@ export default function Reports() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border-primary/50">
-                                    {summary.recentTransactions.map((tx, idx) => (
-                                        <tr key={idx} className="hover:bg-bg-primary/50 transition-colors">
-                                            <td className="py-3 text-text-secondary font-mono text-xs">{tx.date}</td>
-                                            <td className="py-3">
-                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                                    tx.type === "INCOME" 
-                                                        ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                                                        : "bg-red-500/10 text-red-400 border border-red-500/20"
+                                    {summary.recentTransactions.map((tx, idx) => {
+                                        const isIncome = String(tx.type || "").toUpperCase() === "INCOME";
+                                        const catDisplay = typeof tx.category === "object" ? (tx.category?.name || "General") : (tx.category || "General");
+                                        const amt = Number(tx.amount || 0);
+
+                                        return (
+                                            <tr key={tx.id || idx} className="hover:bg-bg-primary/50 transition-colors">
+                                                <td className="py-3 text-text-secondary font-mono text-xs">{tx.date}</td>
+                                                <td className="py-3">
+                                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                                                        isIncome 
+                                                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                                                            : "bg-red-500/10 text-red-400 border border-red-500/20"
+                                                    }`}>
+                                                        {isIncome ? "INCOME" : "EXPENSE"}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 font-medium text-text-primary">{tx.title}</td>
+                                                <td className="py-3 text-text-secondary text-xs">{catDisplay}</td>
+                                                <td className={`py-3 text-right font-mono font-semibold ${
+                                                    isIncome ? "text-emerald-400" : "text-red-400"
                                                 }`}>
-                                                    {tx.type}
-                                                </span>
-                                            </td>
-                                            <td className="py-3 font-medium text-text-primary">{tx.title}</td>
-                                            <td className="py-3 text-text-secondary text-xs">{tx.category}</td>
-                                            <td className={`py-3 text-right font-mono font-semibold ${
-                                                tx.type === "INCOME" ? "text-emerald-400" : "text-red-400"
-                                            }`}>
-                                                {tx.type === "INCOME" ? "+" : "-"}${tx.amount ? tx.amount.toFixed(2) : "0.00"}
-                                            </td>
-                                        </tr>
-                                    ))}
+                                                    {isIncome ? "+" : "-"}₹{amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>
