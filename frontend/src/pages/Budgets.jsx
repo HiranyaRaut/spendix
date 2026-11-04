@@ -297,7 +297,7 @@ export default function Budgets() {
                                                             {item.categoryName}
                                                         </h3>
                                                         <p className="text-[10px] text-text-secondary mt-0.5 uppercase tracking-wider font-bold">
-                                                            Spent: ₹ {item.actualSpent.toLocaleString()} of ₹ {item.budgetedAmount.toLocaleString()}
+                                                            Spent: ₹ {Number(item.actualSpent || 0).toLocaleString()} of ₹ {Number(item.budgetedAmount || 0).toLocaleString()}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -377,7 +377,7 @@ export default function Budgets() {
                                             <div>
                                                 <h3 className="font-semibold text-text-primary text-sm">{item.categoryName}</h3>
                                                 <p className="text-[10px] text-red-400/90 font-bold uppercase tracking-wider">
-                                                    Unbudgeted Spend: ₹ {item.actualSpent.toLocaleString()}
+                                                    Unbudgeted Spend: ₹ {Number(item.actualSpent || 0).toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>

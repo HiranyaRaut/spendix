@@ -338,36 +338,44 @@ export default function Dashboard() {
             {/* Budget Alerts Notifications */}
             {budgetAlerts.length > 0 && (
                 <div className="mb-8 flex flex-col gap-3.5 max-w-5xl">
-                    {budgetAlerts.map(alert => (
-                        <div 
-                            key={alert.categoryId}
-                            className={`p-4 rounded-xl border flex items-center justify-between text-xs font-semibold ${
-                                alert.status === "EXCEEDED"
-                                    ? "bg-red-500/10 border-red-500/35 text-red-400"
-                                    : "bg-amber-500/10 border-amber-500/35 text-amber-500"
-                            }`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className="text-lg leading-none">
-                                    {alert.status === "EXCEEDED" ? "⚠️" : "⚡"}
-                                </span>
-                                <span className="leading-relaxed">
-                                    {alert.status === "EXCEEDED" ? (
-                                        <>
-                                            Budget Exceeded: You've spent <span className="font-bold font-mono">₹{alert.actualSpent.toLocaleString()}</span> in <span className="font-bold">{alert.categoryIcon} {alert.categoryName}</span>, exceeding your monthly limit of <span className="font-bold font-mono">₹{alert.budgetedAmount.toLocaleString()}</span>!
-                                        </>
-                                    ) : (
-                                        <>
-                                            Budget Warning: You've used <span className="font-bold font-mono">{Math.round((alert.actualSpent / alert.budgetedAmount) * 100)}%</span> of your <span className="font-bold font-mono">₹{alert.budgetedAmount.toLocaleString()}</span> limit in <span className="font-bold">{alert.categoryIcon} {alert.categoryName}</span> (Spent: <span className="font-bold font-mono">₹{alert.actualSpent.toLocaleString()}</span>).
-                                        </>
-                                    )}
-                                </span>
+                    {budgetAlerts.map(alert => {
+                        const actualSpent = Number(alert.actualSpent || 0);
+                        const budgetedAmount = Number(alert.budgetedAmount || 0);
+                        const pctUsed = budgetedAmount > 0 ? Math.round((actualSpent / budgetedAmount) * 100) : 0;
+                        const catIcon = alert.categoryIcon || "🏷️";
+                        const catName = alert.categoryName || "Category";
+
+                        return (
+                            <div 
+                                key={alert.categoryId || alert.budgetId || Math.random()}
+                                className={`p-4 rounded-xl border flex items-center justify-between text-xs font-semibold ${
+                                    alert.status === "EXCEEDED"
+                                        ? "bg-red-500/10 border-red-500/35 text-red-400"
+                                        : "bg-amber-500/10 border-amber-500/35 text-amber-500"
+                                }`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <span className="text-lg leading-none">
+                                        {alert.status === "EXCEEDED" ? "⚠️" : "⚡"}
+                                    </span>
+                                    <span className="leading-relaxed">
+                                        {alert.status === "EXCEEDED" ? (
+                                            <>
+                                                Budget Exceeded: You've spent <span className="font-bold font-mono">₹{actualSpent.toLocaleString()}</span> in <span className="font-bold">{catIcon} {catName}</span>, exceeding your monthly limit of <span className="font-bold font-mono">₹{budgetedAmount.toLocaleString()}</span>!
+                                            </>
+                                        ) : (
+                                            <>
+                                                Budget Warning: You've used <span className="font-bold font-mono">{pctUsed}%</span> of your <span className="font-bold font-mono">₹{budgetedAmount.toLocaleString()}</span> limit in <span className="font-bold">{catIcon} {catName}</span> (Spent: <span className="font-bold font-mono">₹{actualSpent.toLocaleString()}</span>).
+                                            </>
+                                        )}
+                                    </span>
+                                </div>
+                                <Link to="/budgets" className="underline hover:opacity-85 text-[10px] font-bold uppercase tracking-wider shrink-0 ml-4 cursor-pointer">
+                                    Manage &rarr;
+                                </Link>
                             </div>
-                            <Link to="/budgets" className="underline hover:opacity-85 text-[10px] font-bold uppercase tracking-wider shrink-0 ml-4 cursor-pointer">
-                                Manage &rarr;
-                            </Link>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
@@ -388,7 +396,7 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-2">
                         <p className="text-3xl font-bold text-text-primary tracking-tight font-mono">
-                            ₹ {summary.balance.toLocaleString()}
+                            ₹ {Number(summary.balance || 0).toLocaleString()}
                         </p>
                     </div>
                     <div className="text-[10px] text-text-secondary font-semibold uppercase tracking-wider">
@@ -454,7 +462,7 @@ export default function Dashboard() {
                     </div>
                     <div className="mt-2">
                         <p className="text-3xl font-bold text-text-primary tracking-tight font-mono">
-                            ₹ {summary.savings.toLocaleString()}
+                            ₹ {Number(summary.savings || 0).toLocaleString()}
                         </p>
                     </div>
                     <div className="text-[10px] text-text-secondary font-semibold uppercase tracking-wider">
@@ -529,7 +537,7 @@ export default function Dashboard() {
                                     Total Exp.
                                 </span>
                                 <span className="text-xl font-bold text-text-primary mt-1 font-mono">
-                                    ₹{summary.totalExpense.toLocaleString()}
+                                    ₹{Number(summary.totalExpense || 0).toLocaleString()}
                                 </span>
                             </div>
                         </div>
@@ -545,7 +553,7 @@ export default function Dashboard() {
                                         <span className="text-text-primary font-medium">{item.category}</span>
                                     </div>
                                     <div className="flex-1 mx-3 border-b border-dotted border-border-primary" />
-                                    <span className="font-semibold text-text-primary font-mono">₹{item.amount.toLocaleString()}</span>
+                                    <span className="font-semibold text-text-primary font-mono">₹{Number(item.amount || 0).toLocaleString()}</span>
                                 </div>
                             ))}
                         </div>
@@ -574,11 +582,11 @@ export default function Dashboard() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="p-3 bg-bg-primary/30 border border-border-primary/30 rounded-lg">
                                     <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-semibold">Total Income</span>
-                                    <span className="text-base font-bold text-[#2d9d5c] font-mono">₹{summary.totalIncome.toLocaleString()}</span>
+                                    <span className="text-base font-bold text-[#2d9d5c] font-mono">₹{Number(summary.totalIncome || 0).toLocaleString()}</span>
                                 </div>
                                 <div className="p-3 bg-bg-primary/30 border border-border-primary/30 rounded-lg">
                                     <span className="text-[10px] text-text-secondary uppercase tracking-wider block font-semibold">Total Expenses</span>
-                                    <span className="text-base font-bold text-[#e15a5a] font-mono">₹{summary.totalExpense.toLocaleString()}</span>
+                                    <span className="text-base font-bold text-[#e15a5a] font-mono">₹{Number(summary.totalExpense || 0).toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -624,7 +632,7 @@ export default function Dashboard() {
                                             </div>
                                             <div className="text-right">
                                                 <p className={`font-bold text-sm ${item.type === "income" ? "text-[#2d9d5c]" : "text-[#e15a5a]"}`}>
-                                                    {item.type === "income" ? "↗" : "↘"} ₹{item.amount.toLocaleString()}
+                                                    {item.type === "income" ? "↗" : "↘"} ₹{Number(item.amount || 0).toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>

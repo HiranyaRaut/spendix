@@ -1,7 +1,7 @@
 // Demo data store and mock adapter for live Vercel demo
 // Allows Spendix to be explored interactively with full functionality without requiring an active backend
 
-const DEMO_STORAGE_KEY = "spendix_demo_data_v1";
+const DEMO_STORAGE_KEY = "spendix_demo_data_v2";
 
 const DEFAULT_CATEGORIES = [
     { id: 1, name: "Housing", icon: "🏠", color: "#6b7280", type: "EXPENSE" },
@@ -657,31 +657,39 @@ export async function handleDemoRequest(config) {
 
     // 8. Budgets
     if (path === "/budgets/summary") {
-        const summary = data.budgets.map((b) => {
-            const cat = data.categories.find((c) => c.id === b.categoryId) || {
-                name: "Category",
-                icon: "💰",
-                color: "#c5a059",
-            };
-            const spent = data.expenses
-                .filter((e) => e.category?.id === b.categoryId)
+        const summary = (data.categories || []).map((cat) => {
+            const b = (data.budgets || []).find((bg) => bg.categoryId === cat.id);
+            const spent = (data.expenses || [])
+                .filter((e) => e.category?.id === cat.id)
                 .reduce((acc, e) => acc + Number(e.amount || 0), 0);
-            const remaining = Math.max(0, b.amount - spent);
-            const pct = b.amount > 0 ? Math.round((spent / b.amount) * 100) : 0;
-            let status = "OK";
-            if (spent > b.amount) status = "EXCEEDED";
-            else if (pct >= 80) status = "WARNING";
+            const budgetedAmount = b ? Number(b.amount || 0) : 0;
+            const remaining = Math.max(0, budgetedAmount - spent);
+            const pct = budgetedAmount > 0 ? Math.round((spent / budgetedAmount) * 100) : 0;
+            
+            let status = "NORMAL";
+            if (budgetedAmount > 0) {
+                if (spent >= budgetedAmount) status = "EXCEEDED";
+                else if (pct >= 80) status = "WARNING";
+            }
 
             return {
-                id: b.id,
+                id: b ? b.id : null,
+                budgetId: b ? b.id : null,
+                categoryId: cat.id,
+                categoryName: cat.name,
+                categoryIcon: cat.icon || "💰",
+                categoryColor: cat.color || "#c5a059",
                 category: cat,
-                budgetAmount: b.amount,
+                budgetedAmount,
+                budgetAmount: budgetedAmount,
+                actualSpent: spent,
                 spentAmount: spent,
                 remainingAmount: remaining,
                 percentage: pct,
                 status,
             };
-        });
+        }).filter((item) => item.budgetedAmount > 0 || item.actualSpent > 0);
+
         return ok(summary);
     }
 
